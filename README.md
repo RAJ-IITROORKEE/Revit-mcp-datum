@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with 40+ powerful tools for BIM automation, documentation, and intelligent manipulation.
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with 50+ powerful tools for BIM automation, documentation, and intelligent manipulation.
 
 ## Description
 
@@ -119,6 +119,8 @@ flowchart LR
 | create_view               | Create floor plans, sections, elevations, 3D views |
 | duplicate_view            | Duplicate views with detailing options    |
 | set_view_properties       | Modify view scale, detail level, templates |
+| set_view_range            | Configure view range (top, cut plane, bottom, underlay) |
+| create_scope_box          | Create scope boxes for coordinated view cropping |
 
 ### 📄 Sheet & Viewport Management
 | Name                      | Description                               |
@@ -132,7 +134,11 @@ flowchart LR
 | create_dimension          | Create linear, angular, radial dimensions |
 | create_tag                | Tag elements (doors, windows, rooms, etc.)|
 | batch_tag_elements        | Auto-tag multiple elements efficiently    |
-| create_text_note          | Create text annotations in views          |
+| create_text_note          | Create text annotations 
+| create_callout            | Create detailed callout views with reference bubbles |
+| create_elevation_marker   | Create elevation markers generating multiple views |
+| create_keynote            | Add specification keynotes to elements    |
+| create_section_marker     | Create building section views with markers |in views          |
 | create_detail_lines       | Create 2D detail lines for drafting       |
 | tag_walls		     | Tag all walls in view            |
 
@@ -146,7 +152,27 @@ flowchart LR
 | Name                      | Description                               |
 | ------------------------- | ----------------------------------------- |
 | create_room               | Create rooms with automatic area calculation |
-| create_room_separation_line | Define room boundaries with separation lines |
+| cr📊 Schedules & Analysis Tools
+| Name                      | Description                               |
+| ------------------------- | ----------------------------------------- |
+| create_schedule           | Create room, door, window, material schedules |
+| apply_view_filter         | Apply parametric filters with graphic overrides |
+| create_color_scheme       | Create color-coded plans by parameter values |
+
+### 🎨 Detail Components
+| Name                      | Description                               |
+| ------------------------- | ----------------------------------------- |
+| create_filled_region      | Create hatched/patterned regions for details |
+| create_detail_component   | Place 2D detail symbols (bolts, welds, etc.) |
+| create_masking_region     | Create opaque masks to hide drawing areas |
+
+### 📝 Revision & Documentation
+| Name                      | Description                               |
+| ------------------------- | ----------------------------------------- |
+| create_revision_cloud     | Create revision clouds to mark design changes |
+| manage_revisions          | Create and manage project revision tracking |
+
+### eate_room_separation_line | Define room boundaries with separation lines |
 | update_room_properties    | Update room names, numbers, finishes      |
 | store_room_data           | Store room data in local database         |
 
