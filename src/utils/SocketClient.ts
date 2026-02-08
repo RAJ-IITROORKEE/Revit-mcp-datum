@@ -132,13 +132,13 @@ export class RevitClientConnection {
         const commandString = JSON.stringify(commandObj);
         this.socket.write(commandString);
 
-        // 设置超时
+        // Set timeout
         setTimeout(() => {
           if (this.responseCallbacks.has(requestId)) {
             this.responseCallbacks.delete(requestId);
-            reject(new Error(`Command timed out after 2 minutes: ${command}`));
+            reject(new Error(`Command timed out after 5 minutes: ${command}`));
           }
-        }, 120000); // 2分钟超时
+        }, 300000); // 5 minute timeout
       } catch (error) {
         reject(error);
       }
