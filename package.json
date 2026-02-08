@@ -17,15 +17,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lisiting01/revit-mcp.git"
+    "url": "git+https://github.com/RAJ-IITROORKEE/Revit-mcp-datum.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["revit", "mcp", "automation", "bim", "drafting", "ai"],
+  "author": "Raj Rabidas @Datum",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lisiting01/revit-mcp/issues"
+    "url": "https://github.com/RAJ-IITROORKEE/Revit-mcp-datum/issues"
   },
-  "homepage": "https://github.com/lisiting01/revit-mcp#readme",
+  "homepage": "https://github.com/RAJ-IITROORKEE/Revit-mcp-datum#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "better-sqlite3": "^11.7.0",

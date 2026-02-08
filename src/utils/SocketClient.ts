@@ -21,11 +21,11 @@ export class RevitClientConnection {
     });
 
     this.socket.on("data", (data) => {
-      // 将接收到的数据添加到缓冲区
+      // Add received data to buffer
       const dataString = data.toString();
       this.buffer += dataString;
 
-      // 尝试解析完整的JSON响应
+      // Try to parse complete JSON response
       this.processBuffer();
     });
 
@@ -41,13 +41,13 @@ export class RevitClientConnection {
 
   private processBuffer(): void {
     try {
-      // 尝试解析JSON
+      // Try to parse JSON
       const response = JSON.parse(this.buffer);
-      // 如果成功解析，处理响应并清空缓冲区
+      // If successful, handle response and clear buffer
       this.handleResponse(this.buffer);
       this.buffer = "";
     } catch (e) {
-      // 如果解析失败，可能是因为数据不完整，继续等待更多数据
+      // If parsing fails, data might be incomplete, wait for more data
     }
   }
 
