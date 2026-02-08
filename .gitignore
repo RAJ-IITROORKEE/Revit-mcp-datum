@@ -1,3 +1,16 @@
 build/
 node_modules/
 revit-data.db
+
+# Deployment files (kept separate from main repo)
+deployment/
+installer/
+package-plugin.ps1
+build-installer.ps1
+revit-mcp-plugin-setup.iss
+CREATE_INSTALLER_EXE.md
+DEPLOYMENT_GUIDE.md
+revit-mcp-plugin-package/
+*.exe
+*.zip
+SHA256SUMS.txt
