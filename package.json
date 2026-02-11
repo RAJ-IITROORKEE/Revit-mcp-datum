@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "- `create_object` - Create a new object with detailed parameters\r - `delete_object` - Remove an object from view\r - `modify_object` - Modify an existing object's properties",
   "main": "index.js",
-  "type": "module",
   "bin": {
     "revit-mcp": "./build/index.js"
   },
