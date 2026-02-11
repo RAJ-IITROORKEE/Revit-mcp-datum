@@ -75,15 +75,16 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-app.options("*", (_req: Request, res: Response) => {
+app.options("/{*path}", (_req: Request, res: Response) => {
   res.sendStatus(204);
 });
 
 // ─── Auth Middleware ─────────────────────────────────────────────────────────
-function authMiddleware(req: Request, res: Response, next: NextFunction): void {
+function authMiddleware(req: Request, res: Response, next: NextFunction) {
   // Skip auth if no API key configured (dev mode)
   if (!API_KEY) {
-    return next();
+    next();
+    return;
   }
 
   // Check Authorization: Bearer <token>
@@ -91,14 +92,16 @@ function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
     if (token === API_KEY) {
-      return next();
+      next();
+      return;
     }
   }
 
   // Check X-API-Key header
   const apiKeyHeader = req.headers["x-api-key"];
   if (typeof apiKeyHeader === "string" && apiKeyHeader === API_KEY) {
-    return next();
+    next();
+    return;
   }
 
   res.status(401).json({ error: "Unauthorized - Invalid API key" });

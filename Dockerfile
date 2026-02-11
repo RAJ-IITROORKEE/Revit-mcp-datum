@@ -1,37 +1,28 @@
-FROM node:18-alpine
+FROM node:18-slim
 
-# Create app directory
 WORKDIR /app
+
+# Install build tools for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies needed for build)
+# Install ALL dependencies (devDeps needed for TypeScript build)
 RUN npm ci
 
-# Copy application source
+# Copy source
 COPY . .
 
-# Build TypeScript -> JavaScript
+# Build TypeScript
 RUN npm run build
 
-# Remove devDependencies to reduce image size
+# Remove devDependencies
 RUN npm prune --production
 
-# Create logs directory
-RUN mkdir -p logs
-
-# Environment variables (Railway overrides PORT automatically)
-ENV PORT=3000
-ENV MCP_HOST=0.0.0.0
+# Railway sets PORT automatically
 ENV NODE_ENV=production
+EXPOSE 8080
 
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-  CMD node -e "const http=require('http');http.get('http://localhost:'+process.env.PORT+'/health',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"
-
-# Start the HTTP server directly (Railway provides HTTPS termination)
+# Start HTTP server (Railway provides HTTPS termination)
 CMD ["node", "build/server-http.js"]
