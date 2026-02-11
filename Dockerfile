@@ -21,14 +21,14 @@ RUN chmod +x start.sh
 # Create logs and certs directories
 RUN mkdir -p logs certs
 
-# Environment variables
-ENV MCP_PORT=3000
+# Environment variables (Railway will override PORT automatically)
+ENV PORT=3000
 ENV MCP_HOST=0.0.0.0
 ENV CERT_PATH=./certs/server.crt
 ENV KEY_PATH=./certs/server.key
 ENV NODE_ENV=production
 
-# Expose HTTPS port
+# Expose port (Railway uses dynamic PORT)
 EXPOSE 3000
 
 # Health check

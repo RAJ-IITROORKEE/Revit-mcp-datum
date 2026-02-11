@@ -19,5 +19,5 @@ if [ ! -f "./certs/server.crt" ] || [ ! -f "./certs/server.key" ]; then
 fi
 
 # Start the server
-echo "Starting server on port ${MCP_PORT:-3000}..."
+echo "Starting server on port ${PORT:-3000}..."
 node server-secure.js

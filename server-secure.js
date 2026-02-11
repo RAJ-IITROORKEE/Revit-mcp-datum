@@ -5,10 +5,11 @@ const path = require('path');
 const crypto = require('crypto');
 
 // Configuration
-const PORT = process.env.MCP_PORT || 3000;
+// Railway uses PORT, fallback to MCP_PORT for local development
+const PORT = process.env.PORT || process.env.MCP_PORT || 3000;
 const CERT_PATH = process.env.CERT_PATH || './certs/server.crt';
 const KEY_PATH = process.env.KEY_PATH || './certs/server.key';
-const HOST = process.env.MCP_HOST || '127.0.0.1'; // Default to localhost only
+const HOST = process.env.MCP_HOST || '0.0.0.0'; // Railway needs 0.0.0.0
 const API_KEY = process.env.MCP_API_KEY || '';
 const ENABLE_IP_WHITELIST = process.env.ENABLE_IP_WHITELIST === 'true';
 const WHITELIST_IPS = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',').map(ip => ip.trim()) : [];
