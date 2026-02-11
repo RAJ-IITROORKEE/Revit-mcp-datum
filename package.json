@@ -1,15 +1,19 @@
 {
   "name": "revit-mcp",
   "version": "1.0.0",
-  "description": "- `create_object` - Create a new object with detailed parameters\r - `delete_object` - Remove an object from view\r - `modify_object` - Modify an existing object's properties",
+  "description": "Advanced MCP server for Revit automation with 65+ tools for AI-driven BIM drafting, furniture layout, design analysis, and building code compliance",
   "main": "index.js",
+  "type": "module",
   "bin": {
     "revit-mcp": "./build/index.js"
   },
   "scripts": {
     "clean": "rimraf build",
     "prebuild": "npm run clean",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node build/server-http.js",
+    "start:stdio": "node build/index.js",
+    "start:secure": "node server-secure.js"
   },
   "files": [
     "build"
@@ -26,13 +30,15 @@
   },
   "homepage": "https://github.com/RAJ-IITROORKEE/Revit-mcp-datum#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "1.10.1",
     "better-sqlite3": "^11.7.0",
+    "express": "^4.21.0",
     "ws": "^8.18.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.13.10",
     "@types/ws": "^8.18.0",
     "rimraf": "^5.0.10",

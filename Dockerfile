@@ -1,42 +1,37 @@
 FROM node:18-alpine
 
-# Install OpenSSL for certificate generation
-RUN apk add --no-cache openssl
-
 # Create app directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies needed for build)
+RUN npm ci
 
-# Copy application files
+# Copy application source
 COPY . .
 
-# Build TypeScript
+# Build TypeScript -> JavaScript
 RUN npm run build
 
-# Make startup script executable
-RUN chmod +x start.sh
+# Remove devDependencies to reduce image size
+RUN npm prune --production
 
-# Create logs and certs directories
-RUN mkdir -p logs certs
+# Create logs directory
+RUN mkdir -p logs
 
-# Environment variables (Railway will override PORT automatically)
+# Environment variables (Railway overrides PORT automatically)
 ENV PORT=3000
 ENV MCP_HOST=0.0.0.0
-ENV CERT_PATH=./certs/server.crt
-ENV KEY_PATH=./certs/server.key
 ENV NODE_ENV=production
 
-# Expose port (Railway uses dynamic PORT)
+# Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('https').get('https://localhost:3000/health', {rejectUnauthorized: false}, (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD node -e "const http=require('http');http.get('http://localhost:'+process.env.PORT+'/health',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"
 
-# Start application
-CMD ["./start.sh"]
+# Start the HTTP server directly (Railway provides HTTPS termination)
+CMD ["node", "build/server-http.js"]
