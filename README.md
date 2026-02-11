@@ -27,42 +27,82 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 
 > Complete installation environment still needs to consider the needs of revit-mcp-plugin, please refer to [revit-mcp-plugin](https://github.com/revit-mcp/revit-mcp-plugin)
 
-## Installation
+## ⚡ Quick Setup (5 minutes)
 
-### 1. Build local MCP service
+### Automated Setup (Recommended)
 
-Install dependencies
-
+**Windows:**
 ```bash
-npm install
+./quick-setup-secure.bat
 ```
 
-Build
-
+**Linux/Mac:**
 ```bash
-npm run build
+chmod +x quick-setup-secure.sh
+./quick-setup-secure.sh
 ```
 
-### 2. Client configuration
+> This auto-generates your API key, creates certificates, and configures everything!
 
-**Claude client**
+### What Gets Generated
 
-Claude client -> Settings > Developer > Edit Config > claude_desktop_config.json
+After running setup, you'll have:
+- ✅ **Random 64-char API Key** - Saved in `.env` file automatically
+- ✅ **SSL Certificates** - For secure HTTPS connection
+- ✅ **Configuration** - `.env` file with all settings
+
+### Configure Claude Desktop
+
+Edit your Claude config (`%APPDATA%\Claude\claude_desktop_config.json`):
 
 ```json
 {
-    "mcpServers": {
-        "revit-mcp": {
-            "command": "node",
-            "args": ["<path to the built file>\\build\\index.js"]
-        }
+  "mcpServers": {
+    "revit-mcp": {
+      "url": "https://localhost:3000",
+      "env": {
+        "Authorization": "Bearer YOUR_API_KEY_HERE"
+      }
     }
+  }
 }
 ```
 
-Restart the Claude client. When you see the hammer icon, it means the connection to the MCP service is normal.
+Get your API key from the `.env` file created by setup script.
 
-![claude](./assets/claude.png)
+### Start Server
+
+```bash
+# Option 1: Direct
+node server-secure.js
+
+# Option 2: PM2 (Recommended)
+npm install -g pm2
+pm2 start ecosystem-secure.config.js
+pm2 logs revit-mcp-secure
+```
+
+### Verify Connection
+
+```bash
+# Test health (no auth needed)
+curl -k https://localhost:3000/health
+
+# Test with API key
+curl -k https://localhost:3000/status -H "X-API-Key: YOUR_KEY_FROM_.env"
+```
+
+---
+
+## 🔐 Security Features
+
+✅ **API Key Authentication** - All requests require valid API key  
+✅ **HTTPS/TLS** - Encrypted communication  
+✅ **IP Whitelist** - Optional, restrict by network  
+✅ **Rate Limiting** - 100 requests/minute (configurable)  
+✅ **Default Localhost** - Zero public exposure by default  
+
+See `START_HERE.md` for more options.
 
 ## Framework
 
