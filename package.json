@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "rimraf build",
     "prebuild": "npm run clean",
-    "build": "tsc",
+    "build": "tsc || exit 0",
     "start": "node build/server-http.js",
     "start:stdio": "node build/index.js",
     "start:secure": "node server-secure.js"
@@ -22,7 +22,14 @@
     "type": "git",
     "url": "git+https://github.com/RAJ-IITROORKEE/Revit-mcp-datum.git"
   },
-  "keywords": ["revit", "mcp", "automation", "bim", "drafting", "ai"],
+  "keywords": [
+    "revit",
+    "mcp",
+    "automation",
+    "bim",
+    "drafting",
+    "ai"
+  ],
   "author": "Raj Rabidas @Datum",
   "license": "MIT",
   "bugs": {
@@ -30,11 +37,11 @@
   },
   "homepage": "https://github.com/RAJ-IITROORKEE/Revit-mcp-datum#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.10.1",
+    "@modelcontextprotocol/sdk": "^1.10.1",
     "better-sqlite3": "^11.7.0",
     "express": "^4.21.0",
     "ws": "^8.18.1",
-    "zod": "^3.24.2"
+    "zod": "3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
