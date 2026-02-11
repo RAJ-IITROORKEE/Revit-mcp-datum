@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "revit-mcp": {
+      "url": "https://your-domain-or-ip:3000",
+      "env": {
+        "Authorization": "Bearer your-api-key-here-change-this"
+      }
+    }
+  },
+  "preferences": {
+    "coworkScheduledTasksEnabled": false,
+    "sidebarMode": "chat"
+  }
+}
