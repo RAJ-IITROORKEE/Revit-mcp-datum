@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install OpenSSL for certificate generation
+RUN apk add --no-cache openssl
+
 # Create app directory
 WORKDIR /app
 
@@ -12,11 +15,11 @@ RUN npm ci --only=production
 # Copy application files
 COPY . .
 
-# Create logs directory
-RUN mkdir -p logs
+# Make startup script executable
+RUN chmod +x start.sh
 
-# Create certs volume mount point
-VOLUME ["/app/certs"]
+# Create logs and certs directories
+RUN mkdir -p logs certs
 
 # Environment variables
 ENV MCP_PORT=3000
@@ -33,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('https').get('https://localhost:3000/health', {rejectUnauthorized: false}, (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
 
 # Start application
-CMD ["node", "server.js"]
+CMD ["./start.sh"]
