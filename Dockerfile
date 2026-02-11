@@ -15,6 +15,9 @@ RUN npm ci --only=production
 # Copy application files
 COPY . .
 
+# Build TypeScript
+RUN npm run build
+
 # Make startup script executable
 RUN chmod +x start.sh
 
