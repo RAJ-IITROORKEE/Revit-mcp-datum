@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **114+ powerful tools** for complete BIM automation: structural systems (beams, trusses, foundations, braces), multi-story building design (levels, floors, roofs, walls, curtain walls, stairs, ramps), geometry operations (copy, array, mirror, trim, split, offset), coordination tools (clash detection, distance measurement, element relationships), phasing (existing/demolition/new construction), 3D views, CAD/model import & linking, material management, interior detailing (wall sweeps, reveals), site design (topography, building pads), family/component management, assembly views, AI-driven layout planning, building code compliance, and production-grade documentation export.
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **130+ powerful tools** for complete BIM automation: **Architectural** (structural systems, multi-story buildings, walls, floors, roofs, stairs, ramps, curtain walls), **MEP** (electrical circuits & panels, HVAC ducts & equipment, plumbing pipes & fixtures, fire sprinkler systems, load calculations, auto-routing), **Coordination** (clash detection, measurements, element relationships, phasing), **Geometry Operations** (copy, array, mirror, trim, split, offset), **Visualization** (3D views, assemblies), **Import/Export** (CAD, model linking, PDF/DWG export), **Materials & Parameters** (browse/assign materials, read/write parameters), **AI-Driven** (layout optimization, auto-furnishing, code compliance), and **Fabrication** (shop-ready MEP detailing with spool sheets).
 
 ## Description
 
@@ -36,6 +36,11 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 - **Import & Linking**: Import CAD (DWG/DXF) for reference, link Revit models for coordination, manage linked model positioning
 - **Assembly Views**: Create construction detail assemblies with auto-generated views for shop drawings and prefab coordination
 - **Export & Documentation**: Export views to PNG, JPEG, PDF, DWG, DXF with configurable resolution, paper size, and layer mapping
+- **Electrical Systems**: Circuits, panels, fixtures, conduit routing, NEC load calculations — complete power & lighting design
+- **Mechanical (HVAC) Systems**: Ductwork, AHUs, VAVs, diffusers, system definition, ASHRAE load calculations — complete HVAC design
+- **Plumbing Systems**: Pipes, fixtures, water/sanitary/storm systems, fixture unit calculations — complete plumbing design
+- **Fire Protection**: Sprinkler systems with NFPA 13 compliance, auto head spacing, hazard classification
+- **MEP Coordination**: Auto-routing with clash avoidance, MEP spaces, fabrication-ready detailing with spool sheets
 - **Advanced Element Creation**: Create walls, floors, ceilings, roofs, rooms, columns, and families with natural language
 - **Complete Element Modification**: Move, rotate, resize, change type, flip, mirror, pin/unpin, and set parameters
 - **View & Sheet Management**: Automate view creation, duplication, and sheet organization
@@ -155,7 +160,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (114+)
+## Supported Tools (130+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -381,6 +386,63 @@ flowchart LR
 | get_loaded_families | **NEW** — Get comprehensive catalog of all families currently loaded in the project, organized by category. Returns family names, type names, type IDs, and optionally detailed parameters and type preview images. Supports filtering by 25+ categories (Doors, Windows, Furniture, Columns, MEP, Site, etc.) and family name. Essential first step for LLM to choose the right component. |
 | place_component | **NEW** — High-level component placement tool for any loaded family type. Supports all categories: doors (on walls), windows (on walls), furniture, columns, structural framing, MEP, fixtures, site elements, etc. Features: rotation, level assignment, host element/face selection, vertical offset, flip/mirror, structural type designation, and instance parameter overrides after placement. |
 
+---
+
+## ⚡ MEP (Mechanical, Electrical, Plumbing) Systems *(NEW)*
+
+### 🔌 Electrical Systems *(NEW)*
+
+> Complete electrical design: circuits, panels, fixtures, conduit routing, and NEC-compliant load calculations.
+
+| Name | Description |
+| --- | --- |
+| create_electrical_circuit | **NEW** — Create electrical circuits connecting devices (lights, receptacles, equipment) to panels. Configurable: circuit type (Power, Lighting, DataTelecom, FireAlarm), voltage, phase configuration, number of poles, wire size (AWG), conduit type (EMT, PVC, Rigid), breaker rating, and load classification (Continuous, NonContinuous, Motor, HVAC). Auto-calculates wire sizing based on NEC. |
+| place_electrical_equipment | **NEW** — Place electrical equipment: panels, transformers, switchgear, generators, UPS systems, motor control centers, transfer switches, disconnects. Configure voltage, amp rating, kVA rating, number of circuits (for panels), wall mounting, and space assignment. Use `get_loaded_families` with `'OST_ElectricalEquipment'`. |
+| place_electrical_fixture | **NEW** — Place electrical fixtures: lighting fixtures (ceiling, wall, pendant), switches, receptacles/outlets, data/telecom devices, fire alarm devices, security devices, emergency lights, exit signs. Supports ceiling/wall/floor hosting, circuit assignment, wattage, voltage, and switch leg configuration. |
+| route_conduit | **NEW** — Route electrical conduit and cable trays between points with auto-generated fittings (elbows, tees, connectors). Supports EMT, rigid, PVC, flexible conduit, and cable trays. Configure diameter, width/height (cable tray), system classification (Power, Lighting, FireAlarm, DataTelecom). |
+| calculate_electrical_load | **NEW** — Calculate electrical loads per NEC standards: PanelLoad, CircuitLoad, ServiceEntrance, TransformerSizing, GeneratorSizing, FullBuilding. Applies demand factors by building type, includes 25% spare capacity reserve, diversity factors, and power factor. Returns load calculations, panel summaries, and equipment sizing recommendations. |
+
+### ❄️ Mechanical (HVAC) Systems *(NEW)*
+
+> Complete HVAC design: ductwork, equipment placement, system definition, and ASHRAE load calculations.
+
+| Name | Description |
+| --- | --- |
+| create_duct | **NEW** — Create HVAC ductwork with auto-generated fittings: rectangular, round, oval, and flexible ducts. Configure width/height (rectangular), diameter (round), system classification (SupplyAir, ReturnAir, ExhaustAir, OutsideAir, Smoke), insulation thickness, and auto-fittings at direction changes. Use `get_available_family_types` with `'OST_DuctCurves'`. |
+| place_mechanical_equipment | **NEW** — Place HVAC equipment: AHUs, VAV boxes, fans, boilers, chillers, cooling towers, heat pumps, diffusers, grilles, dampers, heat exchangers, pumps. Configure airflow (CFM), cooling capacity (BTU/hr), heating capacity, host surface (floor/ceiling/wall/roof), space assignment, and equipment mark. |
+| create_mechanical_system | **NEW** — Create mechanical systems grouping ducts and equipment. Define airflow paths from source (AHU) to terminals (diffusers). Systems: SupplyAir, ReturnAir, ExhaustAir, OutsideAir, VentilationAir, KitchenExhaust, SmokControl. Configure design airflow (CFM) and static pressure. |
+| calculate_hvac_load | **NEW** — Calculate heating/cooling loads per ASHRAE standards: RoomLoad, ZoneLoad, BuildingLoad, EquipmentSizing, AirflowCalculation. Analyzes building envelope, internal gains (occupancy, lighting, equipment), ventilation per ASHRAE 62.1, and climate zone weather data. Returns load calculations, equipment sizing, and airflow requirements. |
+
+### 💧 Plumbing Systems *(NEW)*
+
+> Complete plumbing design: pipes, fixtures, systems, and fixture unit calculations.
+
+| Name | Description |
+| --- | --- |
+| create_pipe | **NEW** — Create plumbing pipes with auto-generated fittings: domestic water (hot/cold/return), sanitary, storm drainage, vent, natural gas, medical gas, chilled water, hot water, condenser water. Configure diameter, slope (for drainage), insulation thickness, and system classification. Use `get_available_family_types` with `'OST_PipeCurves'`. |
+| place_plumbing_fixture | **NEW** — Place plumbing fixtures: sinks, toilets, urinals, showers, bathtubs, water heaters, water coolers, drinking fountains, floor drains, cleanouts, bidets, dishwashers, washing machines. Configure wall/floor hosting, water connections (cold, hot), drain connection, vent connection, and flow rate (GPM). |
+| create_plumbing_system | **NEW** — Create plumbing systems grouping pipes and fixtures: DomesticColdWater, DomesticHotWater, DomesticHotWaterReturn, Sanitary, StormDrainage, Vent, NaturalGas, MedicalGas, ChilledWater, HotWater, CondenserWater. Configure design flow (GPM) and static pressure (PSI). |
+
+### 🚨 Fire Protection *(NEW)*
+
+> Fire sprinkler system design with NFPA 13 compliance.
+
+| Name | Description |
+| --- | --- |
+| create_sprinkler_system | **NEW** — Create fire sprinkler systems: pipes, sprinkler heads, standpipes, hydrants, pumps. Actions: CreatePipe, PlaceHead, CreateSystem, CalculateCoverage. Head types: Pendant, Upright, Sidewall, Concealed, ESFR, Deluge. System types: WetPipe, DryPipe, Preaction, Deluge, Antifreeze. Configure NFPA 13 hazard classification, coverage radius, K-factor, design density, and auto-layout per NFPA spacing rules. |
+
+### 🔧 MEP Coordination *(NEW)*
+
+> MEP spaces, auto-routing, and fabrication-ready detailing.
+
+| Name | Description |
+| --- | --- |
+| create_mep_space | **NEW** — Create MEP spaces for mechanical rooms, electrical rooms, telecom rooms, IT closets, shafts, plumbing chases, equipment rooms, data centers. Define volumes for energy analysis, HVAC load calculations, and equipment placement validation. Configure space type, conditioning (Conditioned/Unconditioned/Plenum), occupancy, and design loads. |
+| route_mep_path | **NEW** — Auto-route MEP elements (pipes, ducts, conduits, cable trays) from source to destination using intelligent pathfinding. Avoids obstructions (walls, floors, structural, other MEP), maintains minimum clearances (default 100mm), follows preferred routing zones, and minimizes length. Configure routing preferences: horizontal-first, preferred elevation, clearances. |
+| create_mep_fabrication | **NEW** — Create fabrication-ready MEP elements with shop-level detail: dimensions, connection details, material specs, hanger/support info, CNC cutting data. Actions: ConvertToFabrication, CreateFabPart, AddHangers (with spacing per code), GenerateSpool (spool sheets with parts list), ExportFabData (COD, MAJ, ITM, CSV, IFC). Configure database/spec (ASHRAE, SMACNA), material gauge, connector type (Flanged, Welded, Threaded, Grooved), insulation. |
+
+---
+
 ### 👁️ View Management
 
 | Name | Description |
@@ -501,6 +563,7 @@ flowchart TD
 
 ### Recommended Workflow for AI Assistants
 
+**Architectural Phase:**
 1. **Set up levels**: Use `create_level` with `autoSpaceFloors` to establish multi-story structure
 2. **Analyze existing model**: Call `analyze_layout_design` with `analysisScope: "full"` before making changes
 3. **Understand relationships**: Use `get_element_relationships` to understand host/hosted dependencies before modifications
@@ -511,9 +574,20 @@ flowchart TD
 8. **Detail interiors**: Use `create_ceiling`, `create_stairs`, `create_railing`, `create_wall_sweep` for finishes
 9. **Replicate across levels**: Use `copy_elements` BetweenLevels, `array_elements`, `mirror_elements` for efficiency
 10. **Assign materials & phases**: Use `get_project_materials` + `set_element_material` for finishes; `manage_phases` + `set_element_phase` for renovation
-11. **Coordinate & validate**: Run `detect_clashes`, `measure_distance`, `validate_spatial_relationships`, and `check_building_code_compliance`
-12. **Create views**: Use `create_3d_view` for presentation, `create_assembly` for construction details
-13. **Document & export**: Use `export_view` to generate deliverables (PDF, DWG, images)
+
+**MEP Phase:**
+11. **Define MEP spaces**: Use `create_mep_space` for mechanical rooms, electrical rooms, shafts
+12. **Calculate loads**: Use `calculate_hvac_load` for HVAC sizing, `calculate_electrical_load` for panel sizing
+13. **Place equipment**: Use `place_mechanical_equipment` (AHUs, VAVs), `place_electrical_equipment` (panels), `place_plumbing_fixture` (sinks, toilets)
+14. **Route distribution**: Use `create_duct`, `create_pipe`, `route_conduit`, or `route_mep_path` for auto-routing
+15. **Create systems**: Use `create_mechanical_system`, `create_plumbing_system`, `create_electrical_circuit` to organize equipment
+16. **Add fire protection**: Use `create_sprinkler_system` with NFPA auto-layout
+
+**Coordination & Documentation:**
+17. **Coordinate & validate**: Run `detect_clashes` (especially discipline vs discipline), `measure_distance`, `validate_spatial_relationships`, and `check_building_code_compliance`
+18. **Fabrication detailing**: Use `create_mep_fabrication` for shop-ready MEP with spool sheets
+19. **Create views**: Use `create_3d_view` for presentation, `create_assembly` for construction details
+20. **Document & export**: Use `export_view` to generate deliverables (PDF, DWG, images)
 
 ### Complete Multi-Story Building Workflow (NEW)
 
