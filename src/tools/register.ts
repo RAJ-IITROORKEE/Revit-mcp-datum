@@ -37,9 +37,9 @@ export async function registerTools(server: McpServer) {
 
       if (registerFunctionName) {
         module[registerFunctionName](server);
-        console.error(`Registered tool: ${file}`);
+        console.log(`[MCP] Registered tool: ${file}`);
       } else {
-        console.warn(`Warning: No registration function found in file ${file}`);
+        console.warn(`[MCP] Warning: No registration function found in file ${file}`);
       }
     } catch (error) {
       console.error(`Error registering tool ${file}:`, error);
