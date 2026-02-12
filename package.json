@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "rimraf build",
     "prebuild": "npm run clean",
-    "build": "tsc || exit 0",
+    "build": "tsc",
     "start": "node build/server-http.js",
     "start:stdio": "node build/index.js",
     "start:secure": "node server-secure.js"
@@ -41,7 +41,7 @@
     "better-sqlite3": "^11.7.0",
     "express": "^5.2.1",
     "ws": "^8.18.1",
-    "zod": "3.23.8"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",

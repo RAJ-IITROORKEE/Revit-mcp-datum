@@ -1,0 +1,14 @@
+node_modules
+build
+.git
+*.md
+docs/
+.env*
+certs/
+logs/
+*.exe
+*.zip
+deployment/
+installer/
+assets/
+.claude/
