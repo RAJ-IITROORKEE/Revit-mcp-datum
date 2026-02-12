@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with 79+ powerful tools for BIM automation, AI-driven layout design, full drafting automation (floors, ceilings, roofs, curtain walls, stairs, ramps, railings, columns), family/component management, furniture placement, building code compliance, and intelligent design analysis.
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **104+ powerful tools** for complete BIM automation: structural systems (beams, trusses, foundations, braces), multi-story building design (levels, floors, roofs, curtain walls, stairs, ramps), geometry operations (copy, array, mirror, trim, split, offset), material management, interior detailing (wall sweeps, reveals), site design (topography, building pads), family/component management, AI-driven layout planning, building code compliance, and production-grade documentation export.
 
 ## Description
 
@@ -20,14 +20,22 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 - **Auto-Alignment**: Detect and correct misaligned walls, columns, doors, and furniture with configurable tolerance
 - **Mirror & Copy Layouts**: Replicate furniture layouts between rooms, copy floor plans across levels
 - **Comprehensive Data Retrieval**: Get detailed spatial/geometric data from Revit projects with intelligent filtering
+- **Structural Systems**: Beams, trusses, braces, foundations (wall/isolated/strip/mat) — complete structural framework for multi-story buildings
+- **Multi-Story Building**: Create levels with auto-spaced floors, copy elements between levels, array structural bays
 - **Drafting Automation**: Dedicated tools for floors (sloped, structural), ceilings (grid pattern, bulkhead), roofs (footprint, extrusion), curtain walls, curtain grids, mullions, stairs, ramps, railings, columns, and openings
-- **Family & Component Management**: Load families from library, browse loaded families catalog by category, and place component instances with host element support — enabling LLM-assisted component selection
+- **Geometry Operations**: Copy, array (linear/radial/2D grid), mirror, split, trim/extend, offset, join/unjoin geometry, and group elements — the core drafting efficiency tools
+- **Wall Detailing**: Edit wall profiles (parapets, stepped), wall sweeps (cornices, baseboards, crown molding), and wall reveals (groove lines)
+- **Site Design**: Create topography surfaces, building pads, and site grading
+- **Family & Component Management**: Load families from library, browse loaded families catalog by category, and place component instances with host element support
+- **Parameters & Materials**: Read/write any element parameter, browse project materials, assign materials by parameter or paint
+- **Area Planning**: Create area plans, area boundaries, and calculate rentable/gross areas per BOMA standards
+- **Export & Documentation**: Export views to PNG, JPEG, PDF, DWG, DXF with configurable resolution, paper size, and layer mapping
 - **Advanced Element Creation**: Create walls, floors, ceilings, roofs, rooms, columns, and families with natural language
 - **Complete Element Modification**: Move, rotate, resize, change type, flip, mirror, pin/unpin, and set parameters
 - **View & Sheet Management**: Automate view creation, duplication, and sheet organization
 - **Annotation Automation**: Batch tag elements, create dimensions, add text notes, and detail lines
 - **Room & Space Planning**: Create and manage rooms with automatic area calculations
-- **Grid & Reference Systems**: Create grids, reference planes, and level management
+- **Grid & Reference Systems**: Create grids, reference planes, model lines, and level management
 - **Visual Controls**: Color-code elements, set transparency, isolate, hide, and highlight
 - **Spatial Validation**: Check clearances, overlaps, adjacencies, and accessibility compliance
 - **AI-Generated Code Execution**: Send custom code to Revit for complex operations
@@ -141,7 +149,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (79+)
+## Supported Tools (104+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -243,6 +251,84 @@ flowchart LR
 | Name | Description |
 | --- | --- |
 | create_column | **NEW** — Create architectural and structural columns with level constraints (base to top level), rotation, slanted column support (lean from base to top point), grid intersection snapping (place at intersection of two grid lines), and unconnected height for standalone columns. Supports both `'OST_Columns'` (architectural) and `'OST_StructuralColumns'` (structural) categories. |
+
+### 🔩 Structural Systems *(NEW)*
+
+> Complete structural framework for multi-story buildings. Beams span between columns, trusses support roofs, braces resist lateral loads, and foundations transfer loads to ground.
+
+| Name | Description |
+| --- | --- |
+| create_beam | **NEW** — Create structural beams and framing (steel, concrete, wood) between two 3D points. Supports joists, purlins, girders, lintels, and headers. Configurable rotation, justification (center/top/bottom), start/end offsets, and end connections to columns (pinned, fixed, moment frame). Use `get_available_family_types` with `'OST_StructuralFraming'`. |
+| create_truss | **NEW** — Create trusses for roof and floor structural systems. Supports pitched, flat, curved, and scissor top chord profiles. Configurable height, pitch ratio, bearing width, and overhang. Use `get_available_family_types` with `'OST_StructuralTruss'`. |
+| create_brace | **NEW** — Create structural braces for lateral load resistance (wind, seismic). Configurations: SingleDiagonal, XBrace, VBrace, Chevron, KBrace. Connects between columns and beams diagonally. |
+| create_foundation | **NEW** — Create structural foundations: WallFoundation (continuous strip footings under walls), Isolated (pad footings under columns), Strip (standalone continuous), and Mat (slab foundations). Supports width, thickness, eccentricity, and level placement. |
+
+### 📐 Multi-Story & Level Management *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_level | **NEW** — **CRITICAL for multi-story** — Create levels at specified elevations. Auto-creates associated floor plan and ceiling plan views. Features `autoSpaceFloors` shortcut: specify number of floors + floor-to-floor height to auto-generate an entire multi-story building's level structure including optional basement and roof levels. |
+
+### 🧱 Wall Detailing *(NEW)*
+
+> Interior and exterior wall finish detailing. Essential for production-grade architectural drawings.
+
+| Name | Description |
+| --- | --- |
+| edit_wall_profile | **NEW** — Edit wall elevation profiles for non-rectangular shapes: parapets extending above roof, stepped walls, walls with arched openings, tapered walls. Modify the 2D profile visible in section/elevation views. Supports curved segments and custom openings. |
+| create_wall_sweep | **NEW** — Add wall sweeps (horizontal profiles) for architectural detailing: cornices (top), baseboards/skirting (bottom), crown molding, chair rails, wainscoting caps, belt courses, water tables. Configurable wall side, distance from base/top, offset, material, and profile type. |
+| create_wall_reveal | **NEW** — Cut reveal grooves into wall surfaces for decorative patterns: rustication joints, panel delineation, expansion joint lines. Configurable depth, width, wall side, and vertical position. |
+
+### 🌍 Site & Topography *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_topography | **NEW** — Create terrain/topography surfaces from 3D point data. Supports flat sites (corners + elevation shortcut), sloped sites, and complex terrain. Actions: create, modify, add/remove points. Essential for site plans, grading analysis, and building pad placement. |
+| create_building_pad | **NEW** — Create building pads that cut into topography to define the building footprint at grade. Flattens terrain to specified elevation. Required for showing correct ground levels around buildings. |
+
+### 🔄 Geometry Operations *(NEW)*
+
+> The core drafting efficiency tools. Copy, array, mirror, split, trim, offset, and group — these operations are essential for efficiently building complete designs from repeated patterns.
+
+| Name | Description |
+| --- | --- |
+| copy_elements | **NEW** — Copy elements with three modes: **Translation** (offset by vector), **BetweenLevels** (copy from Level 1 to Level 2/3/4 — critical for multi-story), **ToPoint** (base point to destination). Supports multiple copies and view-specific elements. |
+| array_elements | **NEW** — Create **linear and radial arrays** with configurable spacing and count. Linear supports 2D grid arrays (e.g., column grids). Radial supports full/partial circles. Associative arrays update all members when edited. Essential for columns, windows, parking, fixtures. |
+| mirror_elements | **NEW** — Mirror elements across an axis line. Creates mirrored copies or moves to mirrored positions. Essential for symmetric building designs — mirror half a floor plan to create the other half. |
+| join_unjoin_geometry | **NEW** — Join/unjoin overlapping elements (walls, floors, ceilings, roofs, columns) for clean intersections. Switch join order to control which element cuts which. Batch-join all overlapping pairs. |
+| split_element | **NEW** — Split walls and lines at points, by intersecting elements, or with a gap (for expansion joints). Creates separate elements at the split point. |
+| trim_extend_elements | **NEW** — Trim/extend walls and lines to boundaries: trim to element, extend to element, trim corner (two walls to intersection), trim/extend multiple to a common boundary. |
+| offset_element | **NEW** — Create parallel offset copies of walls, lines, and curves. Specify side (Left/Right/Interior/Exterior) and distance. Multiple offset copies at incrementing distances. Essential for parallel walls (corridors). |
+| group_elements | **NEW** — Bundle elements into reusable groups (hotel rooms, apartment units, office modules). Actions: Create, Place, Ungroup, AddToGroup, RemoveFromGroup, ListGroups, EditGroup. Changes to one instance propagate to all. |
+
+### 🎛️ Parameters & Materials *(NEW)*
+
+> Read and write any element property. Essential for LLM to understand and control element characteristics, assign finishes, and produce accurate schedules.
+
+| Name | Description |
+| --- | --- |
+| get_element_parameters | **NEW** — Read ALL parameters (instance + type) of any element: names, values, units, data types, read-only status. Filter by parameter group (Geometry, Identity, Materials, Structural) or name pattern. Essential for LLM to understand elements before modification. |
+| set_element_parameters | **NEW** — Batch set parameters on multiple elements: marks, comments, phase, dimensions, custom parameters. Supports instance and type parameters. Transaction-safe with continue-on-error option. |
+| get_project_materials | **NEW** — List all materials in the project with appearance (color, transparency, texture), physical properties (density, strength), and thermal properties. Filter by name or class (Concrete, Metal, Wood, Glass, Paint, etc.). |
+| set_element_material | **NEW** — Assign materials to elements by parameter (structural/finish material), by paint (visual override on specific faces), or by type material. Use with `get_project_materials` for available materials. |
+
+### 📐 Model Geometry *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_model_line | **NEW** — Create 3D model lines visible in all views: Straight, Arc, Circle, Ellipse, Spline. For reference geometry, setback lines, property boundaries, and design guides. Configurable line style and work plane. |
+
+### 📏 Area Planning *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_area_plan | **NEW** — Create area plans and area boundaries for BOMA-standard space analysis (rentable, gross building, common, service areas). Actions: CreatePlan, CreateBoundary (on walls or custom), CreateArea, GetAreaSchemes. Wall boundary positions: WallCenter, WallFace, CoreCenter, CoreFace. |
+
+### 📤 Export & Documentation *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| export_view | **NEW** — Export views/sheets to **PNG, JPEG, BMP, TIFF, DWG, DXF, PDF**. Image exports support configurable DPI (72-600) and pixel dimensions. DWG exports support AIA/ISO/BS layer mapping. PDF exports support paper sizes (A0-A4, ANSI), color modes, and multi-view combine. Batch export all sheets at once. |
 
 ### 📦 Family & Component Management *(NEW)*
 
@@ -373,36 +459,43 @@ flowchart TD
 
 ### Recommended Workflow for AI Assistants
 
-1. **Always start with analysis**: Call `analyze_layout_design` with `analysisScope: "full"` before making any suggestions
-2. **Get spatial data**: Use `get_element_spatial_data` for precise coordinates of elements you need to modify
-3. **Discover components**: Use `get_loaded_families` or `load_family` to find available family types before placement
-4. **Make changes**: Use dedicated tools (`create_floor`, `create_stairs`, `create_curtain_wall`, `place_component`, etc.) or `modify_element`, `place_furniture_in_room`, `send_code_to_revit`
-5. **Validate**: Run `validate_spatial_relationships` after changes to confirm correctness
-6. **Check compliance**: Run `check_building_code_compliance` for final verification
+1. **Set up levels**: Use `create_level` with `autoSpaceFloors` to establish multi-story structure
+2. **Analyze existing model**: Call `analyze_layout_design` with `analysisScope: "full"` before making changes
+3. **Get spatial data**: Use `get_element_spatial_data` for precise coordinates; `get_element_parameters` for properties
+4. **Discover components**: Use `get_loaded_families` or `load_family` to find available family types
+5. **Build structure**: Use `create_column`, `create_beam`, `create_foundation` for structural system
+6. **Create enclosure**: Use `create_floor`, `create_roof`, `create_curtain_wall`, walls, and openings
+7. **Detail interiors**: Use `create_ceiling`, `create_stairs`, `create_railing`, `create_wall_sweep` for finishes
+8. **Replicate across levels**: Use `copy_elements` BetweenLevels, `array_elements`, `mirror_elements` for efficiency
+9. **Assign materials**: Use `get_project_materials` + `set_element_material` for finishes and appearances
+10. **Validate**: Run `validate_spatial_relationships` and `check_building_code_compliance`
+11. **Document**: Use `export_view` to generate deliverables (PDF, DWG, images)
 
-### Drafting Automation Workflow (NEW)
+### Complete Multi-Story Building Workflow (NEW)
 
 ```mermaid
 flowchart TD
-    A[User requests building element] --> B{What element?}
-    B -->|Floor| C[get_available_family_types OST_Floors]
-    B -->|Ceiling| D[get_available_family_types OST_Ceilings]
-    B -->|Roof| E[get_available_family_types OST_Roofs]
-    B -->|Curtain Wall| F[get_available_family_types OST_Walls + Curtain filter]
-    B -->|Stairs| G[get_available_family_types OST_Stairs]
-    B -->|Ramp| H[get_available_family_types OST_Ramps]
-    B -->|Railing| I[get_available_family_types OST_StairsRailing]
-    B -->|Column| J[get_available_family_types OST_StructuralColumns]
-    B -->|Any Component| K[get_loaded_families / load_family]
-    C --> C1[create_floor with slope, structural, boundary]
-    D --> D1[create_ceiling with height, bulkhead, room auto-detect]
-    E --> E1[create_roof with footprint/extrusion method]
-    F --> F1[create_curtain_wall] --> F2[create_curtain_grid] --> F3[create_mullion]
-    G --> G1[create_stairs with auto riser calculation]
-    H --> H1[create_ramp with ADA slope compliance]
-    I --> I1[create_railing on path/stairs/ramp]
-    J --> J1[create_column at point or grid intersection]
-    K --> K1[place_component with host/rotation/parameters]
-    C1 & D1 & E1 & F3 & G1 & H1 & I1 & J1 & K1 --> L[validate_spatial_relationships]
+    A[Start: Multi-Story Building] --> B[create_level — autoSpaceFloors]
+    B --> C[create_grid — Structural grid layout]
+    C --> D[create_column — At grid intersections]
+    D --> E[create_beam — Between columns]
+    E --> F[create_foundation — Under columns/walls]
+    F --> G{Create per-level elements}
+    G --> G1[create_floor — Each level slab]
+    G --> G2[create_line_based_element — Walls]
+    G --> G3[create_curtain_wall — Facade]
+    G3 --> G3a[create_curtain_grid] --> G3b[create_mullion]
+    G --> G4[create_stairs + create_railing]
+    G --> G5[create_ramp + create_railing]
+    G1 & G2 & G3b & G4 & G5 --> H[copy_elements BetweenLevels — Repeat to all floors]
+    H --> I{Interior Detailing}
+    I --> I1[create_ceiling — Grid/bulkhead]
+    I --> I2[create_room + auto_furnish_room]
+    I --> I3[create_wall_sweep — Baseboards, cornices]
+    I --> I4[create_opening — Doors, windows, shafts]
+    I1 & I2 & I3 & I4 --> J[create_roof + create_truss]
+    J --> K[set_element_material — Apply finishes]
+    K --> L[validate_spatial_relationships]
     L --> M[check_building_code_compliance]
+    M --> N[export_view — PDF/DWG deliverables]
 ```
