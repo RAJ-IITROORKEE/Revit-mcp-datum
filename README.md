@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **150+ powerful tools** for complete BIM automation: **Architectural** (structural systems, multi-story buildings, walls, floors, roofs, stairs, ramps, curtain walls), **MEP** (electrical circuits & panels, HVAC ducts & equipment, plumbing pipes & fixtures, fire sprinkler systems, load calculations, auto-routing), **Energy & Sustainability** (energy analysis, solar exposure, daylighting, carbon footprint), **Parametric Design** (create/edit families, adaptive components), **Design Options** (variant exploration, cost/performance comparison), **Cost Estimation** (quantity takeoffs, RSMeans integration), **Structural Analysis** (analytical models, load applications), **Advanced Site Design** (property lines, parking layouts, landscaping), **Coordination** (clash detection, measurements, element relationships, phasing), **Geometry Operations** (copy, array, mirror, trim, split, offset), **Visualization** (3D views, assemblies), **Import/Export** (CAD, model linking, PDF/DWG export), **Materials & Parameters** (browse/assign materials, read/write parameters), **AI-Driven** (layout optimization, auto-furnishing, code compliance), **Worksets** (multi-user collaboration), **Model Optimization** (purge, audit, compress), and **Fabrication** (shop-ready MEP detailing with spool sheets).
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **155+ powerful tools** for complete BIM automation: **Architectural** (structural systems, multi-story buildings, walls, floors, roofs, stairs, ramps, curtain walls), **MEP** (electrical circuits & panels, HVAC ducts & equipment, plumbing pipes & fixtures, fire sprinkler systems, load calculations, auto-routing), **Energy & Sustainability** (energy analysis, solar exposure, daylighting, carbon footprint), **Parametric Design** (create/edit families, adaptive components), **Design Options** (variant exploration, cost/performance comparison), **Cost Estimation** (quantity takeoffs, RSMeans integration), **Structural Analysis** (analytical models, load applications), **Advanced Site Design** (property lines, parking layouts, landscaping), **Coordination** (clash detection, measurements, element relationships, phasing), **Geometry Operations** (copy, array, mirror, trim, split, offset), **Visualization** (3D views, assemblies), **Import/Export** (CAD, model linking, PDF/DWG export), **Materials & Parameters** (browse/assign materials, read/write parameters), **AI-Driven** (layout optimization, auto-furnishing, code compliance), **Worksets** (multi-user collaboration), **Model Optimization** (purge, audit, compress), and **Fabrication** (shop-ready MEP detailing with spool sheets).
 
 ## Description
 
@@ -13,6 +13,8 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 ## Key Features
 
 - **AI Design Analysis & Validation**: Deep model scanning that returns structured issue reports with exact coordinates, eliminating LLM hallucination and enabling precise correction code generation
+- **BIM Interoperability**: IFC import/export (IFC2x3, IFC4, IFC4x3) for open BIM workflows, cross-platform coordination (Navisworks, Solibri, Tekla, ArchiCAD), and owner handover (COBie)
+- **Production Documentation**: Export schedules (CSV, Excel, JSON) for specifications/estimating/FM, view templates for standardizing 100s of views, batch template application
 - **Energy & Sustainability**: Energy simulation (ASHRAE 90.1, IECC), solar exposure analysis, daylighting metrics (sDA/ASE for LEED v4), and carbon footprint (embodied + operational)
 - **Parametric Design**: Create and edit families programmatically, adaptive components for complex facades, AI-generated custom components
 - **Design Options & Variants**: Explore multiple design alternatives in one model, compare by cost/energy/carbon, AI recommends optimal solution
@@ -168,7 +170,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (150+)
+## Supported Tools (155+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -448,6 +450,36 @@ flowchart LR
 | create_mep_space | **NEW** — Create MEP spaces for mechanical rooms, electrical rooms, telecom rooms, IT closets, shafts, plumbing chases, equipment rooms, data centers. Define volumes for energy analysis, HVAC load calculations, and equipment placement validation. Configure space type, conditioning (Conditioned/Unconditioned/Plenum), occupancy, and design loads. |
 | route_mep_path | **NEW** — Auto-route MEP elements (pipes, ducts, conduits, cable trays) from source to destination using intelligent pathfinding. Avoids obstructions (walls, floors, structural, other MEP), maintains minimum clearances (default 100mm), follows preferred routing zones, and minimizes length. Configure routing preferences: horizontal-first, preferred elevation, clearances. |
 | create_mep_fabrication | **NEW** — Create fabrication-ready MEP elements with shop-level detail: dimensions, connection details, material specs, hanger/support info, CNC cutting data. Actions: ConvertToFabrication, CreateFabPart, AddHangers (with spacing per code), GenerateSpool (spool sheets with parts list), ExportFabData (COD, MAJ, ITM, CSV, IFC). Configure database/spec (ASHRAE, SMACNA), material gauge, connector type (Flanged, Welded, Threaded, Grooved), insulation. |
+
+---
+
+## 🌐 BIM Interoperability & Production Documentation *(NEW)*
+
+### 📦 IFC Import/Export *(NEW)*
+
+> Open BIM workflows with IFC (Industry Foundation Classes) — the universal exchange format for cross-platform coordination, owner handover (COBie), and multi-discipline collaboration.
+
+| Name | Description |
+| --- | --- |
+| export_ifc | **NEW** — Export Revit model to IFC (IFC2x3, IFC4, IFC4x3) for coordination with all major BIM platforms (Navisworks, Solibri, Tekla, ArchiCAD, Bentley, Trimble). Supports domain-specific views: CoordinationView (clash detection), ReferenceView (lightweight overlay), DesignTransferView (full parametric), StructuralAnalysisView (FEA), QuantityTakeOffView (cost estimating). Configurable export scope (entire project, current view, selected elements, specific levels, by workset), split walls by level, include base quantities, export schedules as property sets, linked files, coordinate systems (project/shared/survey), and classification systems (Uniformat, Omniclass, Uniclass). Essential for open BIM, owner handover, and energy analysis. |
+| import_ifc | **NEW** — Import IFC models from other BIM platforms (ArchiCAD, Tekla, Bentley, Vectorworks, SketchUp Pro, BricsCAD BIM) into Revit. Import modes: LinkModel (external reference, read-only, updates with source), ImportIntoCurrentProject (convert to editable Revit elements), OpenAsNewProject (open IFC as new project). Positioning options: AutoCenterToCenter, AutoOriginToOrigin, SharedCoordinates (site alignment), Manual. Import IFC property sets as Revit shared parameters, auto-create levels from IFC storeys, import rooms from IFC spaces, type mapping (IFC types → Revit types). Essential for receiving contractor models, specialty consultant deliverables, and renovation projects. |
+
+### 📊 Schedule Data Export *(NEW)*
+
+> Export schedule data to external systems for specifications, estimating, facility management, and AI-driven document generation.
+
+| Name | Description |
+| --- | --- |
+| export_schedule_data | **NEW** — Export Revit schedules to CSV, Excel (XLSX), TXT, or JSON for integration with external systems. Supports all schedule types: door/window schedules, room/area schedules, equipment schedules, material takeoffs, keynote legends, and custom schedules. Export formats: CSV (most compatible), Excel (formatted workbook with formulas, pivot tables), TXT (tab-delimited), JSON (structured API/AI integration). Configurable: include/exclude headers, title, footer/totals, hidden fields, filtered rows only, delimiter, text encoding, date/number formatting. Batch export all schedules of a category to separate files. Essential for AI specification generation, BOMs, cost/FM system integration, and procurement. |
+
+### 🎨 View Templates *(NEW)*
+
+> Standardize documentation with view templates — instantly propagate graphic settings to 100s of views, enforce corporate standards, and update views when standards change.
+
+| Name | Description |
+| --- | --- |
+| manage_view_templates | **NEW** — Create, edit, duplicate, delete, and manage view templates programmatically. View templates control all view graphics: visibility, detail level, graphic overrides, filters, view scale, discipline, underlay, view range. Actions: CreateTemplate, EditTemplate, DuplicateTemplate, DeleteTemplate, ListTemplates, GetTemplateSettings, CompareTemplates, ImportTemplatesFromProject. Configure: discipline (Architectural, Structural, MEP), detail level (Coarse, Medium, Fine), view scale, category visibility, filters, graphic overrides (line weight, color, transparency, halftone), underlay, view range. Import templates from other projects. Essential for corporate graphic standards, large sheet sets, multi-discipline coordination. |
+| apply_view_template | **NEW** — Apply view templates to views for instant standardization. Batch application modes: ApplyTemplate (specific views), ApplyBatchByLevel (all views of levels), ApplyBatchByNaming (views matching naming pattern), UpdateAllViewsWithTemplate (reapply to push template changes). Filter by view type, level, discipline, on-sheet status, naming pattern. Selective application: choose which template settings to apply (visibility, detail level, filters, graphic overrides, view range, scale, underlay). Dry-run mode previews affected views without applying. Essential for standardizing 100s of views, enforcing corporate standards, and updating views when standards change. |
 
 ---
 
