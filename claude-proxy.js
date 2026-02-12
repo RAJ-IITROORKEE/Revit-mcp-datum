@@ -62,16 +62,50 @@ function forwardToRailway(message) {
     const newSessionId = res.headers['mcp-session-id'];
     if (newSessionId) {
       sessionId = newSessionId;
+      stderr.write(`[Proxy] Session ID: ${sessionId}\n`);
     }
     
     let responseData = '';
     res.on('data', (chunk) => responseData += chunk);
     res.on('end', () => {
       try {
-        // Send response back to Claude Desktop via stdout
-        stdout.write(responseData + '\n');
+        // Parse and validate response
+        const parsed = JSON.parse(responseData);
+        
+        // If HTTP error status but valid JSON-RPC response, forward it
+        if (res.statusCode !== 200) {
+          stderr.write(`[Proxy] HTTP ${res.statusCode}: ${responseData}\n`);
+          
+          // If it's a proper JSON-RPC error, forward it
+          if (parsed.jsonrpc && parsed.error) {
+            stdout.write(JSON.stringify(parsed) + '\n');
+            return;
+          }
+          
+          // Otherwise create a proper error response
+          const errorResponse = {
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: parsed.message || `HTTP ${res.statusCode}`,
+              data: parsed
+            },
+            id: message.id || null
+          };
+          stdout.write(JSON.stringify(errorResponse) + '\n');
+          return;
+        }
+        
+        // Success - forward response as-is
+        stdout.write(JSON.stringify(parsed) + '\n');
       } catch (e) {
-        stderr.write(`[Proxy] Response error: ${e.message}\n`);
+        stderr.write(`[Proxy] Parse error: ${e.message}\n${responseData}\n`);
+        const errorResponse = {
+          jsonrpc: '2.0',
+          error: { code: -32700, message: `Parse error: ${e.message}` },
+          id: message.id || null
+        };
+        stdout.write(JSON.stringify(errorResponse) + '\n');
       }
     });
   });
