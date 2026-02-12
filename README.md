@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **130+ powerful tools** for complete BIM automation: **Architectural** (structural systems, multi-story buildings, walls, floors, roofs, stairs, ramps, curtain walls), **MEP** (electrical circuits & panels, HVAC ducts & equipment, plumbing pipes & fixtures, fire sprinkler systems, load calculations, auto-routing), **Coordination** (clash detection, measurements, element relationships, phasing), **Geometry Operations** (copy, array, mirror, trim, split, offset), **Visualization** (3D views, assemblies), **Import/Export** (CAD, model linking, PDF/DWG export), **Materials & Parameters** (browse/assign materials, read/write parameters), **AI-Driven** (layout optimization, auto-furnishing, code compliance), and **Fabrication** (shop-ready MEP detailing with spool sheets).
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **150+ powerful tools** for complete BIM automation: **Architectural** (structural systems, multi-story buildings, walls, floors, roofs, stairs, ramps, curtain walls), **MEP** (electrical circuits & panels, HVAC ducts & equipment, plumbing pipes & fixtures, fire sprinkler systems, load calculations, auto-routing), **Energy & Sustainability** (energy analysis, solar exposure, daylighting, carbon footprint), **Parametric Design** (create/edit families, adaptive components), **Design Options** (variant exploration, cost/performance comparison), **Cost Estimation** (quantity takeoffs, RSMeans integration), **Structural Analysis** (analytical models, load applications), **Advanced Site Design** (property lines, parking layouts, landscaping), **Coordination** (clash detection, measurements, element relationships, phasing), **Geometry Operations** (copy, array, mirror, trim, split, offset), **Visualization** (3D views, assemblies), **Import/Export** (CAD, model linking, PDF/DWG export), **Materials & Parameters** (browse/assign materials, read/write parameters), **AI-Driven** (layout optimization, auto-furnishing, code compliance), **Worksets** (multi-user collaboration), **Model Optimization** (purge, audit, compress), and **Fabrication** (shop-ready MEP detailing with spool sheets).
 
 ## Description
 
@@ -13,12 +13,20 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 ## Key Features
 
 - **AI Design Analysis & Validation**: Deep model scanning that returns structured issue reports with exact coordinates, eliminating LLM hallucination and enabling precise correction code generation
+- **Energy & Sustainability**: Energy simulation (ASHRAE 90.1, IECC), solar exposure analysis, daylighting metrics (sDA/ASE for LEED v4), and carbon footprint (embodied + operational)
+- **Parametric Design**: Create and edit families programmatically, adaptive components for complex facades, AI-generated custom components
+- **Design Options & Variants**: Explore multiple design alternatives in one model, compare by cost/energy/carbon, AI recommends optimal solution
+- **Cost Estimation**: Automated quantity takeoffs by material/CSI division, construction cost estimates with RSMeans integration, value engineering
+- **Structural Analysis**: Analytical model generation, load applications (dead, live, wind, seismic), export to FEA software (Robot, SAP2000, ETABS)
+- **Advanced Site Design**: Property lines with setback validation, auto-generated parking layouts (ADA-compliant), landscaping with trees/furniture
 - **Intelligent Furniture Automation**: Room-aware furniture placement, auto-furnishing by room type, furniture catalog browsing, and AI-driven layout optimization
-- **Advanced Drafting Tools**: Auto-dimensioning (9 modes), drafting views, legend creation, annotation symbols with auto-numbering
+- **Advanced Drafting Tools**: Auto-dimensioning (9 modes), drafting views, legend creation, annotation symbols with auto-numbering, spot elevations
 - **Building Code Compliance**: Automated checks for egress, ADA/accessibility, fire safety, and spatial requirements (IBC, NBC India, Eurocode)
 - **Layout Optimization**: AI-driven room layout optimization with 8 strategies (space efficiency, circulation, ergonomics, natural light, etc.)
 - **Auto-Alignment**: Detect and correct misaligned walls, columns, doors, and furniture with configurable tolerance
 - **Mirror & Copy Layouts**: Replicate furniture layouts between rooms, copy floor plans across levels
+- **Worksets & Collaboration**: Multi-user worksharing with workset management, element assignment by discipline/zone/phase
+- **Model Optimization**: Purge unused elements, audit/repair database, compress file size, fix warnings, identify heavy families
 - **Comprehensive Data Retrieval**: Get detailed spatial/geometric data from Revit projects with intelligent filtering
 - **Structural Systems**: Beams, trusses, braces, foundations (wall/isolated/strip/mat) — complete structural framework for multi-story buildings
 - **Multi-Story Building**: Create levels with auto-spaced floors, copy elements between levels, array structural bays
@@ -160,7 +168,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (130+)
+## Supported Tools (150+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -440,6 +448,92 @@ flowchart LR
 | create_mep_space | **NEW** — Create MEP spaces for mechanical rooms, electrical rooms, telecom rooms, IT closets, shafts, plumbing chases, equipment rooms, data centers. Define volumes for energy analysis, HVAC load calculations, and equipment placement validation. Configure space type, conditioning (Conditioned/Unconditioned/Plenum), occupancy, and design loads. |
 | route_mep_path | **NEW** — Auto-route MEP elements (pipes, ducts, conduits, cable trays) from source to destination using intelligent pathfinding. Avoids obstructions (walls, floors, structural, other MEP), maintains minimum clearances (default 100mm), follows preferred routing zones, and minimizes length. Configure routing preferences: horizontal-first, preferred elevation, clearances. |
 | create_mep_fabrication | **NEW** — Create fabrication-ready MEP elements with shop-level detail: dimensions, connection details, material specs, hanger/support info, CNC cutting data. Actions: ConvertToFabrication, CreateFabPart, AddHangers (with spacing per code), GenerateSpool (spool sheets with parts list), ExportFabData (COD, MAJ, ITM, CSV, IFC). Configure database/spec (ASHRAE, SMACNA), material gauge, connector type (Flanged, Welded, Threaded, Grooved), insulation. |
+
+---
+
+## ⚡ Advanced Design Automation & Intelligence *(NEW)*
+
+### 🌱 Energy Analysis & Sustainability *(NEW)*
+
+> Performance-driven design with energy simulation, solar analysis, daylighting, and carbon footprint calculations. Essential for sustainable design, green building certifications (LEED, WELL), and energy code compliance.
+
+| Name | Description |
+| --- | --- |
+| run_energy_analysis | **NEW** — Run comprehensive energy simulation using Revit's analytical model. Calculates annual energy consumption (heating, cooling, lighting), peak loads, carbon emissions, and energy costs. Returns performance metrics and compliance status for energy codes (ASHRAE 90.1, IECC). Configurable HVAC systems, building type, location/weather data, and simulation options. Units in SI (kWh, W/m²). |
+| analyze_solar_exposure | **NEW** — Analyze solar exposure and shading: sun path studies, shadow studies (time-series), solar heat gain on surfaces, and shading device effectiveness. Returns solar incident radiation (kWh/m²/year) on building faces, identifies over-glazed facades, and recommends shading devices. Essential for facade design, window sizing, solar panel placement, and passive solar strategies. |
+| calculate_daylighting | **NEW** — Calculate daylighting metrics for rooms: sDA (spatial Daylight Autonomy), ASE (Annual Sunlight Exposure), Daylight Factor, UDI (Useful Daylight Illuminance), and illuminance maps. Essential for LEED v4 certification (sDA 55%/75% thresholds), WELL Building Standard, and optimizing window placement/sizing. Returns compliance status and identifies under/over-lit zones. |
+| calculate_carbon_footprint | **NEW** — Calculate embodied and operational carbon footprint. Embodied carbon from materials (extraction, manufacturing, transportation, construction). Operational carbon from building energy use over lifecycle. Returns total carbon (kg CO2e), carbon intensity (kg CO2e/m²), breakdown by material/system. Supports ICE, EPD, BEES, Athena, OneClickLCA databases. Essential for carbon-neutral design and sustainability certifications. |
+
+### 🔀 Design Options & Variants *(NEW)*
+
+> Explore design alternatives within a single model. AI can generate multiple options (facade systems, structural schemes, layouts) and compare them quantitatively to recommend the optimal solution.
+
+| Name | Description |
+| --- | --- |
+| create_design_option | **NEW** — Create and manage design options for exploring alternatives: CreateSet, CreateOption, AddToOption, RemoveFromOption, SetPrimary, ListOptions, AcceptOption. Each option set can have multiple options with only one visible at a time. Essential for AI-driven design exploration and A/B testing (facade options, layout schemes, structural systems). |
+| compare_design_options | **NEW** — Compare design options by quantitative metrics: cost, area, volume, element count, energy performance, carbon footprint, and custom parameters. Returns side-by-side comparison matrix enabling AI to recommend optimal option based on project criteria. Supports weighting factors for multi-criteria optimization (cost, energy, carbon, time). Generates comparison reports with charts. |
+
+### 🏗️ Parametric Family Creation *(NEW)*
+
+> Create custom Revit families programmatically. AI can generate bespoke components instead of being limited to existing libraries. Essential for custom furniture, specialized equipment, and unique architectural elements.
+
+| Name | Description |
+| --- | --- |
+| create_family | **NEW** — Create new Revit families from templates (GenericModel, Door, Window, Furniture, Column, MEP equipment, etc.). Define geometry (extrusions, revolves, sweeps), add parameters (Width, Height, Depth), and set constraints. Supports loading created families directly into the project or saving as .rfa files for library. |
+| edit_family | **NEW** — Edit existing families programmatically: OpenFamily, AddGeometry, ModifyGeometry, AddParameter, SetParameterFormula, SetConstraint, SaveFamily. Enables AI to customize existing components or create variations. Changes can be saved as new family or reloaded into current project. |
+| create_adaptive_component | **NEW** — Create and place adaptive component families. Adaptive components use adaptive points positioned in 3D space — geometry adapts/stretches to fit. Essential for complex facades, parametric structures, free-form designs (curtain panels, structural nodes, cladding systems). Supports creating new adaptive families or placing existing ones. |
+
+### 💰 Quantity Takeoffs & Cost Estimation *(NEW)*
+
+> Cost-aware design with automated material quantities and construction cost estimates. Essential for budget validation, value engineering, and cost-driven design optimization.
+
+| Name | Description |
+| --- | --- |
+| create_quantity_takeoff | **NEW** — Create material quantity takeoff schedules. Extracts volumes, areas, lengths, counts by material type or element category. Organizes by material (concrete, steel, drywall) or CSI division. Supports grouping, subtotals, phase filtering, and CSV export for integration with estimating software. |
+| calculate_costs | **NEW** — Calculate construction costs using assembly codes, unit costs, and material quantities. Returns estimated total cost, cost breakdown by CSI division, cost per SF/m². Supports RSMeans database, custom unit costs, regional adjustments, labor/equipment/overhead/contingency. Currency-aware (USD, EUR, GBP, INR, etc.). |
+
+### 🏗️ Structural Analysis Integration *(NEW)*
+
+> Bridge design and engineering with analytical models and load applications. Essential for structural validation and coordination with analysis software (Robot, SAP2000, ETABS, STAAD).
+
+| Name | Description |
+| --- | --- |
+| create_analytical_model | **NEW** — Create and manage structural analytical models (simplified stick/surface representations for FEA). Actions: CreateFromPhysical (auto-generate from structural elements), AdjustModel, ValidateModel, ExportModel (to IFC, CIS2, SAF, SDNF formats). Supports StickModel (1D beams/columns), SurfaceModel (2D walls/floors), and Hybrid. Includes loads in export. |
+| apply_structural_loads | **NEW** — Apply structural loads to analytical model elements: Point, Line, Area, UniformArea, Wind, Seismic loads. Define load cases (Dead, Live, Snow, Wind, Seismic, Temperature) and load combinations per ASCE 7 or Eurocode. Configurable magnitude, direction, and distribution. Essential for load-aware design and structural analysis workflows. |
+
+### 🌳 Advanced Site Design *(NEW)*
+
+> Complete site planning with property lines, parking layouts, and landscaping. Essential for zoning compliance, site layout optimization, and exterior visualization.
+
+| Name | Description |
+| --- | --- |
+| create_property_line | **NEW** — Create property lines and boundary definitions: ParcelBoundary, BuildingSetback, Easement, RightOfWay, ZoningLine. Supports survey coordinates, setback calculations (front/rear/left/right), and automatic validation of buildings against setbacks. Can import from CAD layers. Returns buildable area and setback violations. |
+| create_parking_layout | **NEW** — Automatically generate parking lot layouts with parking stalls, drive aisles, and circulation patterns. AI calculates optimal layouts based on site boundaries, parking count requirements, ADA compliance, and code requirements. Supports 90°/60°/45°/30°/parallel stalls, single/double-loaded aisles, surface/structured parking. Returns parking count, circulation efficiency, code compliance. |
+| place_site_component | **NEW** — Place site components: trees, plants, site furniture (benches, bollards, signs), lighting, retaining walls, fences. Supports bulk placement with distribution patterns (single, array, along path, scattered in area, grid) for landscaping. Components auto-host to topography surface. Essential for site planning, landscape architecture, exterior visualization. |
+
+### 👥 Worksets & Collaboration *(NEW)*
+
+> Multi-user collaboration for large projects. Organize model elements by discipline, zone, or phase to enable concurrent work by team members and AI-driven element organization.
+
+| Name | Description |
+| --- | --- |
+| manage_worksets | **NEW** — Manage worksets in workshared models: CreateWorkset, ListWorksets, AssignElementsToWorkset, SetActiveWorkset, SetWorksetVisibility, CloseWorkset, OpenWorkset, GetElementWorkset, RenameWorkset. Organize by discipline (Architecture, Structure, MEP-Plumbing), zone (Level 1, Core-Shell), or phase (Existing, New). Essential for large multi-user projects and safe AI-driven edits. |
+
+### ⚙️ Model Optimization & Maintenance *(NEW)*
+
+> Keep models healthy and performant. Essential after AI-driven bulk element creation to prevent model bloat and maintain responsiveness.
+
+| Name | Description |
+| --- | --- |
+| optimize_model | **NEW** — Optimize and clean up Revit models for performance: PurgeUnused (remove unused families, types, materials, line styles), AuditModel (check/repair database), CompressModel (reduce file size), OptimizeViews (remove unnecessary view-specific elements), DeleteUnplacedRooms, RemoveEmptyGroups, FindLargeElements (identify heavy families), FixWarnings, RemoveDuplicateSheets, CleanSchedules. Returns cleaned element counts and file size reduction. Automatic backup before optimization. |
+
+### 📍 Advanced Annotations *(NEW)*
+
+> Construction documentation with spot elevations and spot coordinates.
+
+| Name | Description |
+| --- | --- |
+| create_spot_elevation | **NEW** — Create spot elevation and spot coordinate annotations: SpotElevation (shows Z elevation), SpotCoordinate (shows X,Y,Z coordinates), SpotSlope (shows slope percentage/angle). Essential for construction documentation, foundation plans, site grading, coordination drawings. Supports bulk creation, project/shared/survey coordinates, level-relative elevations, and custom text formatting (prefix/suffix/precision). |
 
 ---
 
