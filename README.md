@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with 65+ powerful tools for BIM automation, AI-driven layout design, furniture placement, drafting, building code compliance, and intelligent design analysis.
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with 79+ powerful tools for BIM automation, AI-driven layout design, full drafting automation (floors, ceilings, roofs, curtain walls, stairs, ramps, railings, columns), family/component management, furniture placement, building code compliance, and intelligent design analysis.
 
 ## Description
 
@@ -20,7 +20,9 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 - **Auto-Alignment**: Detect and correct misaligned walls, columns, doors, and furniture with configurable tolerance
 - **Mirror & Copy Layouts**: Replicate furniture layouts between rooms, copy floor plans across levels
 - **Comprehensive Data Retrieval**: Get detailed spatial/geometric data from Revit projects with intelligent filtering
-- **Advanced Element Creation**: Create walls, floors, ceilings, rooms, and families with natural language
+- **Drafting Automation**: Dedicated tools for floors (sloped, structural), ceilings (grid pattern, bulkhead), roofs (footprint, extrusion), curtain walls, curtain grids, mullions, stairs, ramps, railings, columns, and openings
+- **Family & Component Management**: Load families from library, browse loaded families catalog by category, and place component instances with host element support — enabling LLM-assisted component selection
+- **Advanced Element Creation**: Create walls, floors, ceilings, roofs, rooms, columns, and families with natural language
 - **Complete Element Modification**: Move, rotate, resize, change type, flip, mirror, pin/unpin, and set parameters
 - **View & Sheet Management**: Automate view creation, duplication, and sheet organization
 - **Annotation Automation**: Batch tag elements, create dimensions, add text notes, and detail lines
@@ -139,7 +141,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (65+)
+## Supported Tools (79+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -188,7 +190,7 @@ flowchart LR
 | --- | --- |
 | get_current_view_info | Get current active view information |
 | get_current_view_elements | Get elements from the current view with category filtering |
-| get_available_family_types | Get available family types in the current project |
+| get_available_family_types | Get available family types in the current project. Filter by category (OST_Walls, OST_Doors, OST_Floors, OST_Roofs, OST_Stairs, OST_Ramps, OST_CurtainWallMullions, etc.) and family name. |
 | get_selected_elements | Get currently selected elements with properties |
 | ai_element_filter | Advanced intelligent element filtering with spatial bounding box queries, category filters, type filters, and visibility options |
 | get_views_list | List all views with filtering options |
@@ -197,13 +199,60 @@ flowchart LR
 | get_levels_list | List all levels with elevations |
 | get_rooms_list | List all rooms with area, perimeter, volume, level, and department. Filter by level, phase, area range, and name. |
 
-### 🏗️ Element Creation
+### 🏗️ Element Creation (Generic)
 
 | Name | Description |
 | --- | --- |
 | create_point_based_element | Create point-based elements (doors, windows, furniture) with position, dimensions, and rotation |
 | create_line_based_element | Create line-based elements (walls, beams, pipes) with start/end points and dimensions |
 | create_surface_based_element | Create surface-based elements (floors, ceilings, roofs) with boundary definitions |
+
+### 🏢 Drafting Automation — Floors, Ceilings & Roofs *(NEW)*
+
+> Dedicated tools with full parameter support for each element type. These go far beyond generic surface-based creation by exposing slope, structural properties, grid patterns, overhangs, and more.
+
+| Name | Description |
+| --- | --- |
+| create_floor | **NEW** — Create floor elements with advanced options: structural vs. architectural floors, sloped floors (slope arrow with tail/head points and angle), span direction for structural analysis, inner loops for floor openings, and level/offset control. Supports batch creation. Use `get_available_family_types` with `['OST_Floors']` to discover floor types. |
+| create_ceiling | **NEW** — Create ceiling elements with support for automatic ceilings (fills room boundary) and sketch-based ceilings with custom boundary. Configurable height offset, slope arrows for sloped ceilings, inner loops for openings (light fixtures, HVAC), and bulkhead (dropped ceiling) configuration with custom drop height and boundary. |
+| create_roof | **NEW** — Create roofs via three methods: **Footprint** (boundary with per-edge slope angles, gable ends, and overhang), **Extrusion** (profile cross-section extruded along a reference plane), and **FaceBase** (on mass faces). Supports inner loops for skylights/shafts, cutoff levels for multi-story roofs, and default slope/overhang settings. |
+| create_opening | **NEW** — Create openings in walls, floors, roofs, and ceilings. Supports rectangular openings (center + width/height + sill height), circular openings (center + radius for ducts/pipes), custom-shaped openings (boundary loop), and vertical shaft openings spanning multiple levels with symbolic plan representation. |
+
+### 🔲 Curtain Wall System *(NEW)*
+
+> Complete curtain wall workflow: create the wall, configure the grid, then place mullions. Each tool provides granular control over the curtain wall components.
+
+| Name | Description |
+| --- | --- |
+| create_curtain_wall | **NEW** — Create curtain walls with configurable grid layout (vertical/horizontal spacing, pattern rules: FixedDistance, FixedNumber, MaximumSpacing, MinimumSpacing), default panel type, default mullion type, multi-level support (base level to top level), and justification options. Integrates with `get_available_family_types` using `'OST_Walls'` with `'Curtain'` filter. |
+| create_curtain_grid | **NEW** — Add, remove, or modify curtain grid lines on existing curtain walls/systems/roofs. Supports U (horizontal) and V (vertical) direction grid lines at precise positions, one-segment vs. full-span grid lines, excluded segments for partial grids, and grid line locking to prevent accidental modification. |
+| create_mullion | **NEW** — Place mullions on curtain wall grid lines with full control: place on specific grid segments, replace mullion types, place on all grid lines at once, configure border mullions separately, and set corner mullion conditions (Miter, Border1OverlapsBorder2, Border2OverlapsBorder1). Use `get_available_family_types` with `'OST_CurtainWallMullions'` to browse mullion types. |
+
+### 🪜 Stairs, Ramps & Railings *(NEW)*
+
+> Full vertical circulation tools with building code awareness. Stairs auto-calculate riser count from floor-to-floor height. Ramps support ADA slope compliance. Railings can be standalone or hosted on stairs/ramps.
+
+| Name | Description |
+| --- | --- |
+| create_stairs | **NEW** — Create stairs connecting two levels with shapes: Straight, L-Shape, U-Shape, Spiral, and ThreeRun. Auto-calculates riser count and tread depth from floor-to-floor height. Supports custom runs with curved segments, custom landings, riser/tread dimensions, automatic railing creation, and structural support types (Stringer, Carriage). |
+| create_ramp | **NEW** — Create accessible ramps with ADA/accessibility compliance support. Configurable slope ratio (default 1:12), width (minimum 915mm ADA), multi-run with automatic landings, curved runs, shapes (Straight, Spiral, LShape, UShape), automatic railings, and multi-level connections. |
+| create_railing | **NEW** — Create railings along paths, on stairs, on ramps, or along floor/slab edges. Supports curved path segments (arcs with center point), horizontal offset, side selection (Left/Right/Both), flip direction, and host element attachment for stairs and ramps. Use `get_available_family_types` with `'OST_StairsRailing'` for railing types. |
+
+### 🏛️ Columns *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_column | **NEW** — Create architectural and structural columns with level constraints (base to top level), rotation, slanted column support (lean from base to top point), grid intersection snapping (place at intersection of two grid lines), and unconnected height for standalone columns. Supports both `'OST_Columns'` (architectural) and `'OST_StructuralColumns'` (structural) categories. |
+
+### 📦 Family & Component Management *(NEW)*
+
+> These tools enable LLM-assisted component selection: first discover what's available (loaded or in library), then place the right component. Essential for AI-driven drafting workflows.
+
+| Name | Description |
+| --- | --- |
+| load_family | **NEW** — Load Revit family files (.rfa) from library into the project. Actions: `list` (browse families in directory), `load` (load specific .rfa file), `search` (find families by name across library paths), `listCategories` (list all available family categories). Supports default Revit library, custom paths, subfolder recursion, and overwrite control. |
+| get_loaded_families | **NEW** — Get comprehensive catalog of all families currently loaded in the project, organized by category. Returns family names, type names, type IDs, and optionally detailed parameters and type preview images. Supports filtering by 25+ categories (Doors, Windows, Furniture, Columns, MEP, Site, etc.) and family name. Essential first step for LLM to choose the right component. |
+| place_component | **NEW** — High-level component placement tool for any loaded family type. Supports all categories: doors (on walls), windows (on walls), furniture, columns, structural framing, MEP, fixtures, site elements, etc. Features: rotation, level assignment, host element/face selection, vertical offset, flip/mirror, structural type designation, and instance parameter overrides after placement. |
 
 ### 👁️ View Management
 
@@ -326,6 +375,34 @@ flowchart TD
 
 1. **Always start with analysis**: Call `analyze_layout_design` with `analysisScope: "full"` before making any suggestions
 2. **Get spatial data**: Use `get_element_spatial_data` for precise coordinates of elements you need to modify
-3. **Make changes**: Use `modify_element`, `place_furniture_in_room`, or `send_code_to_revit`
-4. **Validate**: Run `validate_spatial_relationships` after changes to confirm correctness
-5. **Check compliance**: Run `check_building_code_compliance` for final verification
+3. **Discover components**: Use `get_loaded_families` or `load_family` to find available family types before placement
+4. **Make changes**: Use dedicated tools (`create_floor`, `create_stairs`, `create_curtain_wall`, `place_component`, etc.) or `modify_element`, `place_furniture_in_room`, `send_code_to_revit`
+5. **Validate**: Run `validate_spatial_relationships` after changes to confirm correctness
+6. **Check compliance**: Run `check_building_code_compliance` for final verification
+
+### Drafting Automation Workflow (NEW)
+
+```mermaid
+flowchart TD
+    A[User requests building element] --> B{What element?}
+    B -->|Floor| C[get_available_family_types OST_Floors]
+    B -->|Ceiling| D[get_available_family_types OST_Ceilings]
+    B -->|Roof| E[get_available_family_types OST_Roofs]
+    B -->|Curtain Wall| F[get_available_family_types OST_Walls + Curtain filter]
+    B -->|Stairs| G[get_available_family_types OST_Stairs]
+    B -->|Ramp| H[get_available_family_types OST_Ramps]
+    B -->|Railing| I[get_available_family_types OST_StairsRailing]
+    B -->|Column| J[get_available_family_types OST_StructuralColumns]
+    B -->|Any Component| K[get_loaded_families / load_family]
+    C --> C1[create_floor with slope, structural, boundary]
+    D --> D1[create_ceiling with height, bulkhead, room auto-detect]
+    E --> E1[create_roof with footprint/extrusion method]
+    F --> F1[create_curtain_wall] --> F2[create_curtain_grid] --> F3[create_mullion]
+    G --> G1[create_stairs with auto riser calculation]
+    H --> H1[create_ramp with ADA slope compliance]
+    I --> I1[create_railing on path/stairs/ramp]
+    J --> J1[create_column at point or grid intersection]
+    K --> K1[place_component with host/rotation/parameters]
+    C1 & D1 & E1 & F3 & G1 & H1 & I1 & J1 & K1 --> L[validate_spatial_relationships]
+    L --> M[check_building_code_compliance]
+```
