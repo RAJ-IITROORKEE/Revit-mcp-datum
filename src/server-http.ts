@@ -24,9 +24,9 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { registerTools } from "./tools/register.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || process.env.MCP_PORT || "3000", 10);
 const HOST = process.env.MCP_HOST || "0.0.0.0";
-const API_KEY = process.env.MCP_API_KEY || "";
+const API_KEY = (process.env.MCP_API_KEY || "").trim();
 
 // ─── Session Store ───────────────────────────────────────────────────────────
 interface Session {
@@ -252,6 +252,8 @@ app.use((_req: Request, res: Response) => {
 });
 
 // ─── Start Server ────────────────────────────────────────────────────────────
+console.log(`[BOOT] PORT=${PORT} (env PORT=${process.env.PORT}, MCP_PORT=${process.env.MCP_PORT})`);
+
 const httpServer = app.listen(PORT, HOST, () => {
   console.log("═══════════════════════════════════════════════════════════");
   console.log("  Revit MCP HTTP Server (Railway/Cloud Deployment)");
@@ -261,6 +263,10 @@ const httpServer = app.listen(PORT, HOST, () => {
   console.log(`  Health: http://${HOST}:${PORT}/health`);
   console.log(`  Auth:   ${API_KEY ? "ENABLED (API key required)" : "DISABLED (no API key set)"}`);
   console.log("═══════════════════════════════════════════════════════════");
+});
+
+httpServer.on("error", (err: Error) => {
+  console.error(`[BOOT] Server listen error:`, err);
 });
 
 // ─── Graceful Shutdown ───────────────────────────────────────────────────────
