@@ -2,7 +2,7 @@
 
 # Revit MCP Enhanced
 
-An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **104+ powerful tools** for complete BIM automation: structural systems (beams, trusses, foundations, braces), multi-story building design (levels, floors, roofs, curtain walls, stairs, ramps), geometry operations (copy, array, mirror, trim, split, offset), material management, interior detailing (wall sweeps, reveals), site design (topography, building pads), family/component management, AI-driven layout planning, building code compliance, and production-grade documentation export.
+An advanced Model Context Protocol (MCP) server for comprehensive Revit automation and drafting through natural language. Enhanced with **114+ powerful tools** for complete BIM automation: structural systems (beams, trusses, foundations, braces), multi-story building design (levels, floors, roofs, walls, curtain walls, stairs, ramps), geometry operations (copy, array, mirror, trim, split, offset), coordination tools (clash detection, distance measurement, element relationships), phasing (existing/demolition/new construction), 3D views, CAD/model import & linking, material management, interior detailing (wall sweeps, reveals), site design (topography, building pads), family/component management, assembly views, AI-driven layout planning, building code compliance, and production-grade documentation export.
 
 ## Description
 
@@ -22,13 +22,19 @@ This project is the **MCP server side** (providing Tools to AI). You need to use
 - **Comprehensive Data Retrieval**: Get detailed spatial/geometric data from Revit projects with intelligent filtering
 - **Structural Systems**: Beams, trusses, braces, foundations (wall/isolated/strip/mat) — complete structural framework for multi-story buildings
 - **Multi-Story Building**: Create levels with auto-spaced floors, copy elements between levels, array structural bays
+- **Wall Creation**: Dedicated wall tool with stacked walls, embedded walls, location line control, and layer structure configuration
 - **Drafting Automation**: Dedicated tools for floors (sloped, structural), ceilings (grid pattern, bulkhead), roofs (footprint, extrusion), curtain walls, curtain grids, mullions, stairs, ramps, railings, columns, and openings
+- **Coordination & Analysis**: Element relationship analysis, distance measurement, clash detection (geometric collision detection between disciplines)
+- **Phasing & Renovation**: Create phases (Existing, Demolition, New Construction), assign phase created/demolished to elements
 - **Geometry Operations**: Copy, array (linear/radial/2D grid), mirror, split, trim/extend, offset, join/unjoin geometry, and group elements — the core drafting efficiency tools
 - **Wall Detailing**: Edit wall profiles (parapets, stepped), wall sweeps (cornices, baseboards, crown molding), and wall reveals (groove lines)
 - **Site Design**: Create topography surfaces, building pads, and site grading
 - **Family & Component Management**: Load families from library, browse loaded families catalog by category, and place component instances with host element support
 - **Parameters & Materials**: Read/write any element parameter, browse project materials, assign materials by parameter or paint
 - **Area Planning**: Create area plans, area boundaries, and calculate rentable/gross areas per BOMA standards
+- **3D Views & Visualization**: Create perspective and orthographic 3D views with camera control, preset orientations, section boxes, and display styles
+- **Import & Linking**: Import CAD (DWG/DXF) for reference, link Revit models for coordination, manage linked model positioning
+- **Assembly Views**: Create construction detail assemblies with auto-generated views for shop drawings and prefab coordination
 - **Export & Documentation**: Export views to PNG, JPEG, PDF, DWG, DXF with configurable resolution, paper size, and layer mapping
 - **Advanced Element Creation**: Create walls, floors, ceilings, roofs, rooms, columns, and families with natural language
 - **Complete Element Modification**: Move, rotate, resize, change type, flip, mirror, pin/unpin, and set parameters
@@ -149,7 +155,7 @@ flowchart LR
 	end
 ```
 
-## Supported Tools (104+)
+## Supported Tools (114+)
 
 ### 🧠 AI Design Analysis & Validation *(NEW)*
 
@@ -214,6 +220,12 @@ flowchart LR
 | create_point_based_element | Create point-based elements (doors, windows, furniture) with position, dimensions, and rotation |
 | create_line_based_element | Create line-based elements (walls, beams, pipes) with start/end points and dimensions |
 | create_surface_based_element | Create surface-based elements (floors, ceilings, roofs) with boundary definitions |
+
+### 🧱 Wall Creation *(NEW)*
+
+| Name | Description |
+| --- | --- |
+| create_wall | **NEW** — Dedicated wall creation with full control: basic walls, curtain walls, stacked walls (different types at different heights like CMU base + wood frame above), embedded walls (parapets inserted into host walls). Configurable location line position (centerline, core centerline, finish faces), structural designation, and flip orientation. Use `get_available_family_types` with `'OST_Walls'`. |
 
 ### 🏢 Drafting Automation — Floors, Ceilings & Roofs *(NEW)*
 
@@ -312,6 +324,25 @@ flowchart LR
 | get_project_materials | **NEW** — List all materials in the project with appearance (color, transparency, texture), physical properties (density, strength), and thermal properties. Filter by name or class (Concrete, Metal, Wood, Glass, Paint, etc.). |
 | set_element_material | **NEW** — Assign materials to elements by parameter (structural/finish material), by paint (visual override on specific faces), or by type material. Use with `get_project_materials` for available materials. |
 
+### 🔍 Analysis & Coordination *(NEW)*
+
+> Essential for AI to understand model relationships, verify clearances, detect conflicts, and ensure constructability.
+
+| Name | Description |
+| --- | --- |
+| get_element_relationships | **NEW** — Analyze element dependencies: host/hosted (door in wall, window in wall), room containment, level associations, structural connections, group membership. Returns host chains and hosted chains recursively. Prevents deleting host before hosted elements. |
+| measure_distance | **NEW** — Measure distances: PointToPoint, ElementToElement (closest distance), ElementToPoint, FaceToFace, EdgeToEdge. Modes: Closest (3D), Horizontal (XY only), Vertical (Z only), Perpendicular. Essential for verifying clearances and building code compliance. |
+| detect_clashes | **NEW** — Geometric clash detection between elements. Scopes: SelectedElements, CategoryVsCategory (e.g., structural vs MEP), DisciplineVsDiscipline, AllElements. Returns clash pairs with severity (Minor/Major/Critical), overlap volume, and coordinates. Configurable tolerance (default 1mm). |
+
+### 🏗️ Phasing & Renovation *(NEW)*
+
+> For renovation projects and phased construction. Show existing conditions, demolition, and new construction.
+
+| Name | Description |
+| --- | --- |
+| manage_phases | **NEW** — Create and manage construction phases: Existing, Demolition, New Construction, Future phases. Actions: ListPhases, CreatePhase, DeletePhase, ReorderPhases, GetPhaseFilters. Essential for renovation documentation. |
+| set_element_phase | **NEW** — Assign Phase Created and Phase Demolished to elements. Defines temporal lifecycle: when built (Phase Created) and when removed (Phase Demolished). Use -1 for "None" (permanent element). |
+
 ### 📐 Model Geometry *(NEW)*
 
 | Name | Description |
@@ -329,6 +360,16 @@ flowchart LR
 | Name | Description |
 | --- | --- |
 | export_view | **NEW** — Export views/sheets to **PNG, JPEG, BMP, TIFF, DWG, DXF, PDF**. Image exports support configurable DPI (72-600) and pixel dimensions. DWG exports support AIA/ISO/BS layer mapping. PDF exports support paper sizes (A0-A4, ANSI), color modes, and multi-view combine. Batch export all sheets at once. |
+| create_assembly | **NEW** — Create assembly views for construction details and shop drawings. Group related elements (typical wall section, stair assembly, curtain wall panel) and auto-generate orthographic views, sections, 3D views, and part lists. Actions: Create, AddElements, RemoveElements, CreateViews, ListAssemblies. |
+
+### 📥 Import & Linking *(NEW)*
+
+> Bring in external references for coordination and context.
+
+| Name | Description |
+| --- | --- |
+| import_cad | **NEW** — Import CAD files (DWG, DXF, DGN) as reference underlays: survey data, civil drawings, existing building CAD, site plans. Import modes: CurrentViewOnly (2D underlay), AllViews, ThreeDModel. Configure layer visibility, color mode (preserved, B&W, grayscale), import units, positioning, and orientation correction. |
+| link_model | **NEW** — Link external Revit models (.rvt) for multi-discipline coordination. Linked models auto-update from source. Positioning: AutoCenterToCenter, AutoOriginToOrigin, SharedCoordinates, Manual. Configure room bounding behavior, workset assignment, and link type (Overlay/Attachment). Actions: LinkModel, UnlinkModel, ReloadLink, ReloadAll, ListLinks. |
 
 ### 📦 Family & Component Management *(NEW)*
 
@@ -345,6 +386,7 @@ flowchart LR
 | Name | Description |
 | --- | --- |
 | create_view | Create floor plans, sections, elevations, and 3D views |
+| create_3d_view | **NEW** — Create 3D views with precise camera control: orthographic (isometric, axonometric) or perspective. Configure eye position, target point, up direction, field of view, section box, and display style (wireframe, shaded, realistic, raytraced). Preset orientations: Isometric, North, South, East, West, TopDown, etc. |
 | duplicate_view | Duplicate views with detailing options |
 | set_view_properties | Modify view scale, detail level, and templates |
 | set_view_range | Configure view range (top, cut plane, bottom, underlay) |
@@ -461,15 +503,17 @@ flowchart TD
 
 1. **Set up levels**: Use `create_level` with `autoSpaceFloors` to establish multi-story structure
 2. **Analyze existing model**: Call `analyze_layout_design` with `analysisScope: "full"` before making changes
-3. **Get spatial data**: Use `get_element_spatial_data` for precise coordinates; `get_element_parameters` for properties
-4. **Discover components**: Use `get_loaded_families` or `load_family` to find available family types
-5. **Build structure**: Use `create_column`, `create_beam`, `create_foundation` for structural system
-6. **Create enclosure**: Use `create_floor`, `create_roof`, `create_curtain_wall`, walls, and openings
-7. **Detail interiors**: Use `create_ceiling`, `create_stairs`, `create_railing`, `create_wall_sweep` for finishes
-8. **Replicate across levels**: Use `copy_elements` BetweenLevels, `array_elements`, `mirror_elements` for efficiency
-9. **Assign materials**: Use `get_project_materials` + `set_element_material` for finishes and appearances
-10. **Validate**: Run `validate_spatial_relationships` and `check_building_code_compliance`
-11. **Document**: Use `export_view` to generate deliverables (PDF, DWG, images)
+3. **Understand relationships**: Use `get_element_relationships` to understand host/hosted dependencies before modifications
+4. **Get spatial data**: Use `get_element_spatial_data` for precise coordinates; `get_element_parameters` for properties
+5. **Discover components**: Use `get_loaded_families` or `load_family` to find available family types
+6. **Build structure**: Use `create_column`, `create_beam`, `create_foundation` for structural system
+7. **Create enclosure**: Use `create_wall`, `create_floor`, `create_roof`, `create_curtain_wall`, and openings
+8. **Detail interiors**: Use `create_ceiling`, `create_stairs`, `create_railing`, `create_wall_sweep` for finishes
+9. **Replicate across levels**: Use `copy_elements` BetweenLevels, `array_elements`, `mirror_elements` for efficiency
+10. **Assign materials & phases**: Use `get_project_materials` + `set_element_material` for finishes; `manage_phases` + `set_element_phase` for renovation
+11. **Coordinate & validate**: Run `detect_clashes`, `measure_distance`, `validate_spatial_relationships`, and `check_building_code_compliance`
+12. **Create views**: Use `create_3d_view` for presentation, `create_assembly` for construction details
+13. **Document & export**: Use `export_view` to generate deliverables (PDF, DWG, images)
 
 ### Complete Multi-Story Building Workflow (NEW)
 
