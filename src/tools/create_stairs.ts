@@ -5,7 +5,23 @@ import { withRevitConnection } from "../utils/ConnectionManager.js";
 export function registerCreateStairsTool(server: McpServer) {
   server.tool(
     "create_stairs",
-    "Create stair elements in Revit connecting two levels. Supports straight, L-shaped, U-shaped, spiral, and custom stairs with configurable runs, landings, risers, treads, and railing options. Stairs automatically calculate riser count and tread depth based on floor-to-floor height. Use get_available_family_types with categoryList ['OST_Stairs'] to discover available stair types. All units are in millimeters (mm).",
+    `Create stair elements in Revit connecting two levels. Supports straight, L-shaped, U-shaped, spiral, and custom stairs with configurable runs, landings, risers, treads, and railing options. 
+
+Stairs automatically calculate riser count and tread depth based on floor-to-floor height. 
+
+Example (Simple straight stair between two levels):
+{
+  "stairs": [{
+    "baseLevelId": 30,
+    "topLevelId": 31,
+    "location": {"x": 5000, "y": 5000, "z": 0},
+    "direction": 0,
+    "width": 1200,
+    "stairShape": "Straight"
+  }]
+}
+
+The tool will automatically calculate the number of risers and tread depth. Use get_available_family_types with categoryList ['OST_Stairs'] to discover available stair types. All units are in millimeters (mm).`,
     {
       stairs: z
         .array(
@@ -204,9 +220,8 @@ export function registerCreateStairsTool(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Create stairs failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
+              text: `Create stairs failed: ${error instanceof Error ? error.message : String(error)
+                }`,
             },
           ],
         };

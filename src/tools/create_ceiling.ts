@@ -5,7 +5,28 @@ import { withRevitConnection } from "../utils/ConnectionManager.js";
 export function registerCreateCeilingTool(server: McpServer) {
   server.tool(
     "create_ceiling",
-    "Create ceiling elements in Revit with support for automatic and sketch-based ceilings, grid patterns, bulkheads, and height offsets. Supports specifying ceiling type, boundary profile, level, and offset from level. Use get_available_family_types with categoryList ['OST_Ceilings'] to discover available ceiling types. All units are in millimeters (mm).",
+    `Create ceiling elements in Revit with support for automatic and sketch-based ceilings, grid patterns, bulkheads, and height offsets. 
+
+IMPORTANT - Boundary Format:
+The 'boundary' parameter accepts TWO formats:
+1. SIMPLE (Recommended): Array of points [{x, y}, {x, y}, ...]
+2. COMPLEX: Object with outerLoop property {outerLoop: [{startPoint, endPoint}, ...]}
+
+Example (Simple format for 14m x 12m ceiling):
+{
+  "ceilings": [{
+    "levelId": 30,
+    "heightOffset": 2700,
+    "boundary": [
+      {"x": 0, "y": 0},
+      {"x": 14000, "y": 0},
+      {"x": 14000, "y": 12000},
+      {"x": 0, "y": 12000}
+    ]
+  }]
+}
+
+Use get_available_family_types with categoryList ['OST_Ceilings'] to discover available ceiling types. All units are in millimeters (mm).`,
     {
       ceilings: z
         .array(

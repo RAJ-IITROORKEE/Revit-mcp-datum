@@ -21,7 +21,7 @@ export function registerTagAllWallsTool(server: McpServer) {
       const params = args;
       try {
         const response = await withRevitConnection(async (revitClient) => {
-          return await revitClient.sendCommand("tag_walls", params);
+          return await revitClient.sendCommand("tag_all_walls", params);
         });
         
         return {

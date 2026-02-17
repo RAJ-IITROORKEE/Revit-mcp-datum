@@ -12,15 +12,28 @@ export function registerAutoFurnishRoomTool(server: McpServer) {
     "auto_furnish_room",
     `Automatically furnish a room in Revit based on its type, dimensions, and standard design practices. This AI-driven tool analyzes the room's shape, door positions, window locations, and available floor area to generate an optimal furniture layout.
 
-Workflow:
-1. Analyzes room geometry (boundary, area, aspect ratio)
-2. Identifies door and window positions for circulation/light awareness
-3. Selects appropriate furniture from the project's loaded families
-4. Calculates optimal placement positions with proper clearances
-5. Places all furniture with correct rotation and spacing
-6. Returns a summary of placed items and any items that couldn't fit
+WORKFLOW:
+1. First, create the room using create_room
+2. Get the room ID from the response
+3. Call auto_furnish_room with the room ID and desired room type
 
-Supports standard room types:
+Example:
+{
+  "roomId": 12345,
+  "roomType": "bedroom",
+  "designStyle": "modern",
+  "occupancy": 1
+}
+
+The tool will:
+1. Analyze room geometry (boundary, area, aspect ratio)
+2. Identify door and window positions for circulation/light awareness
+3. Select appropriate furniture from the project's loaded families
+4. Calculate optimal placement positions with proper clearances
+5. Place all furniture with correct rotation and spacing
+6. Return a summary of placed items and any items that couldn't fit
+
+Supported standard room types:
 - Office (single/shared): desk, chair, bookshelf, filing cabinet
 - Conference Room: conference table, chairs, credenza, whiteboard area
 - Living Room: sofa, coffee table, TV unit, side tables, bookshelf
@@ -135,9 +148,8 @@ Supports standard room types:
           content: [
             {
               type: "text",
-              text: `Auto furnish room failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
+              text: `Auto furnish room failed: ${error instanceof Error ? error.message : String(error)
+                }`,
             },
           ],
         };
