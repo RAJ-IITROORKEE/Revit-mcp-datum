@@ -22,49 +22,58 @@ export function registerCreateFloorTool(server: McpServer) {
                 "ElementId of the level on which the floor is placed. Use get_levels_list to find available levels."
               ),
             boundary: z
-              .object({
-                outerLoop: z
-                  .array(
-                    z.object({
-                      startPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
-                      }),
-                      endPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
-                      }),
-                    })
-                  )
-                  .min(3)
-                  .describe(
-                    "Array of line segments forming the outer boundary. Must form a closed loop (minimum 3 segments)."
-                  ),
-                innerLoops: z
-                  .array(
-                    z.array(
+              .union([
+                z.array(
+                  z.object({
+                    x: z.number().describe("X coordinate in mm"),
+                    y: z.number().describe("Y coordinate in mm"),
+                    z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
+                  })
+                ).min(3).describe("Simple array of corner points [{x, y}, ...] forming a closed boundary (minimum 3 points)."),
+                z.object({
+                  outerLoop: z
+                    .array(
                       z.object({
                         startPoint: z.object({
                           x: z.number().describe("X coordinate in mm"),
                           y: z.number().describe("Y coordinate in mm"),
-                          z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
                         }),
                         endPoint: z.object({
                           x: z.number().describe("X coordinate in mm"),
                           y: z.number().describe("Y coordinate in mm"),
-                          z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
                         }),
                       })
                     )
-                  )
-                  .optional()
-                  .describe(
-                    "Array of inner loops for floor openings/holes. Each inner loop is an array of line segments forming a closed loop."
-                  ),
-              })
-              .describe("Floor boundary definition with outer loop and optional inner loops (openings)"),
+                    .min(3)
+                    .describe(
+                      "Array of line segments forming the outer boundary. Must form a closed loop (minimum 3 segments)."
+                    ),
+                  innerLoops: z
+                    .array(
+                      z.array(
+                        z.object({
+                          startPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                          endPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                        })
+                      )
+                    )
+                    .optional()
+                    .describe(
+                      "Array of inner loops for floor openings/holes. Each inner loop is an array of line segments forming a closed loop."
+                    ),
+                }),
+              ])
+              .describe("Floor boundary. Accepts simple point array [{x,y}, ...] or object with outerLoop and optional innerLoops."),
             heightOffset: z
               .number()
               .optional()

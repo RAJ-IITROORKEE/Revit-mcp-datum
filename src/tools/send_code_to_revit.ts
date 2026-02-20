@@ -5,12 +5,12 @@ import { withRevitConnection } from "../utils/ConnectionManager.js";
 export function registerSendCodeToRevitTool(server: McpServer) {
   server.tool(
     "send_code_to_revit",
-    "Send C# code to Revit for execution. The code will be inserted into a template with access to the Revit Document and parameters. Your code should be written to work within the Execute method of the template.",
+    "❌ WARNING: This tool ONLY executes C# code via Roslyn compiler. Python, pyRevit, and IronPython are NOT supported and will fail. ✅ Use C# syntax only. Code executes inside: `public static object Execute(Document document, object[] parameters)`. Available: `document` (Autodesk.Revit.DB.Document), `parameters` (object[]). Pre-imported namespaces: System, System.Linq, System.Collections.Generic, Autodesk.Revit.DB, Autodesk.Revit.UI. MUST end with return statement (use `return null;` if no value). Example: `var walls = new FilteredElementCollector(document).OfClass(typeof(Wall)).ToElements(); return $\"Found {walls.Count} walls\";`",
     {
       code: z
         .string()
         .describe(
-          "The C# code to execute in Revit. This code will be inserted into the Execute method of a template with access to Document and parameters."
+          "✅ C# code ONLY (NOT Python/pyRevit/IronPython). Executes in: `public static object Execute(Document document, object[] parameters)`. Use C# syntax like: 'new FilteredElementCollector(document)', 'typeof(Wall)', '$\"string {var}\"'. MUST include return statement. Example: `var collector = new FilteredElementCollector(document).OfClass(typeof(Wall)); return collector.GetElementCount();`"
         ),
       parameters: z
         .array(z.any())

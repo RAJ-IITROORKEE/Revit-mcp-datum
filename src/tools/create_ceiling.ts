@@ -43,51 +43,60 @@ Use get_available_family_types with categoryList ['OST_Ceilings'] to discover av
                 "ElementId of the level for the ceiling. Use get_levels_list to find available levels."
               ),
             boundary: z
-              .object({
-                outerLoop: z
-                  .array(
-                    z.object({
-                      startPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
-                      }),
-                      endPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
-                      }),
-                    })
-                  )
-                  .min(3)
-                  .describe(
-                    "Array of line segments forming the outer boundary. Must form a closed loop (minimum 3 segments)."
-                  ),
-                innerLoops: z
-                  .array(
-                    z.array(
+              .union([
+                z.array(
+                  z.object({
+                    x: z.number().describe("X coordinate in mm"),
+                    y: z.number().describe("Y coordinate in mm"),
+                    z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
+                  })
+                ).min(3).describe("Simple array of corner points [{x, y}, ...] forming a closed boundary (minimum 3 points)."),
+                z.object({
+                  outerLoop: z
+                    .array(
                       z.object({
                         startPoint: z.object({
                           x: z.number().describe("X coordinate in mm"),
                           y: z.number().describe("Y coordinate in mm"),
-                          z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
                         }),
                         endPoint: z.object({
                           x: z.number().describe("X coordinate in mm"),
                           y: z.number().describe("Y coordinate in mm"),
-                          z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
                         }),
                       })
                     )
-                  )
-                  .optional()
-                  .describe(
-                    "Array of inner loops for ceiling openings (e.g., for light fixtures, HVAC). Each inner loop is an array of line segments forming a closed loop."
-                  ),
-              })
+                    .min(3)
+                    .describe(
+                      "Array of line segments forming the outer boundary. Must form a closed loop (minimum 3 segments)."
+                    ),
+                  innerLoops: z
+                    .array(
+                      z.array(
+                        z.object({
+                          startPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                          endPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                        })
+                      )
+                    )
+                    .optional()
+                    .describe(
+                      "Array of inner loops for ceiling openings (e.g., for light fixtures, HVAC). Each inner loop is an array of line segments forming a closed loop."
+                    ),
+                }),
+              ])
               .optional()
               .describe(
-                "Ceiling boundary definition. If omitted, Revit auto-detects the room boundary (automatic ceiling)."
+                "Ceiling boundary definition. Accepts TWO formats: 1) Simple point array [{x,y}, ...] or 2) Object with outerLoop property. If omitted, Revit auto-detects the room boundary."
               ),
             heightOffset: z
               .number()

@@ -32,46 +32,17 @@ export function registerCreateRoofTool(server: McpServer) {
               .default(0)
               .describe("Height offset from the level in mm"),
             boundary: z
-              .object({
-                outerLoop: z
-                  .array(
-                    z.object({
-                      startPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm"),
-                      }),
-                      endPoint: z.object({
-                        x: z.number().describe("X coordinate in mm"),
-                        y: z.number().describe("Y coordinate in mm"),
-                        z: z.number().optional().default(0).describe("Z coordinate in mm"),
-                      }),
-                      definesSlope: z
-                        .boolean()
-                        .optional()
-                        .default(true)
-                        .describe(
-                          "Whether this boundary edge defines a slope. If false, the edge is a gable (vertical) end."
-                        ),
-                      slopeAngle: z
-                        .number()
-                        .optional()
-                        .describe(
-                          "Slope angle in degrees from horizontal for this edge (e.g., 30 degrees). Overrides the default slope."
-                        ),
-                      overhang: z
-                        .number()
-                        .optional()
-                        .describe("Roof overhang beyond this edge in mm"),
-                    })
-                  )
-                  .min(3)
-                  .describe(
-                    "Array of boundary line segments forming the roof footprint. Must form a closed loop."
-                  ),
-                innerLoops: z
-                  .array(
-                    z.array(
+              .union([
+                z.array(
+                  z.object({
+                    x: z.number().describe("X coordinate in mm"),
+                    y: z.number().describe("Y coordinate in mm"),
+                    z: z.number().optional().default(0).describe("Z coordinate in mm (default 0)"),
+                  })
+                ).min(3).describe("Simple array of corner points [{x, y}, ...] forming a closed roof footprint (minimum 3 points)."),
+                z.object({
+                  outerLoop: z
+                    .array(
                       z.object({
                         startPoint: z.object({
                           x: z.number().describe("X coordinate in mm"),
@@ -83,14 +54,52 @@ export function registerCreateRoofTool(server: McpServer) {
                           y: z.number().describe("Y coordinate in mm"),
                           z: z.number().optional().default(0).describe("Z coordinate in mm"),
                         }),
+                        definesSlope: z
+                          .boolean()
+                          .optional()
+                          .default(true)
+                          .describe(
+                            "Whether this boundary edge defines a slope. If false, the edge is a gable (vertical) end."
+                          ),
+                        slopeAngle: z
+                          .number()
+                          .optional()
+                          .describe(
+                            "Slope angle in degrees from horizontal for this edge (e.g., 30 degrees). Overrides the default slope."
+                          ),
+                        overhang: z
+                          .number()
+                          .optional()
+                          .describe("Roof overhang beyond this edge in mm"),
                       })
                     )
-                  )
-                  .optional()
-                  .describe("Array of inner loops for roof openings (skylights, shafts)"),
-              })
+                    .min(3)
+                    .describe(
+                      "Array of boundary line segments forming the roof footprint. Must form a closed loop."
+                    ),
+                  innerLoops: z
+                    .array(
+                      z.array(
+                        z.object({
+                          startPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                          endPoint: z.object({
+                            x: z.number().describe("X coordinate in mm"),
+                            y: z.number().describe("Y coordinate in mm"),
+                            z: z.number().optional().default(0).describe("Z coordinate in mm"),
+                          }),
+                        })
+                      )
+                    )
+                    .optional()
+                    .describe("Array of inner loops for roof openings (skylights, shafts)"),
+                }),
+              ])
               .optional()
-              .describe("Roof boundary definition for 'Footprint' method"),
+              .describe("Roof boundary. Accepts simple point array [{x,y}, ...] or object with outerLoop. For 'Footprint' method."),
             extrusionProfile: z
               .object({
                 profileLines: z
