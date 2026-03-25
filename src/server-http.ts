@@ -73,6 +73,23 @@ async function createMcpServer(): Promise<McpServer> {
   return server;
 }
 
+async function handleStatelessRequest(req: Request, res: Response): Promise<void> {
+  const server = await createMcpServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+
+  try {
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } finally {
+    await transport.close().catch(() => {
+      // ignore transport close errors on stateless fallback
+    });
+  }
+}
+
 // ─── Express App ─────────────────────────────────────────────────────────────
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -200,15 +217,13 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    // Case 3: Invalid request - no session and not an initialize request
-    res.status(400).json({
-      jsonrpc: "2.0",
-      error: {
-        code: -32000,
-        message: "Bad Request: No valid session ID provided and not an initialization request",
-      },
-      id: null,
-    });
+    // Case 3: Missing or unknown session - fallback to stateless request handling.
+    // This protects against non-sticky load balancers where initialize and follow-up
+    // requests may land on different instances.
+    console.warn(
+      `[MCP] Stateless fallback for method=${typeof req.body?.method === "string" ? req.body.method : "unknown"}`
+    );
+    await handleStatelessRequest(req, res);
   } catch (error) {
     console.error("[MCP] Error handling POST /mcp:", error);
     if (!res.headersSent) {
