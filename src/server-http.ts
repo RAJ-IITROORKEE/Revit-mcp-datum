@@ -37,6 +37,20 @@ interface Session {
 
 const sessions: Map<string, Session> = new Map();
 
+function getSessionId(req: Request): string | undefined {
+  const value = req.headers["mcp-session-id"];
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    const first = value[0];
+    if (typeof first === "string" && first.trim()) {
+      return first.trim();
+    }
+  }
+  return undefined;
+}
+
 // ─── MCP Server Factory ─────────────────────────────────────────────────────
 /**
  * Create a new McpServer instance with all tools registered.
@@ -134,7 +148,7 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
 // POST /mcp - Handle client-to-server MCP requests
 app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const sessionId = getSessionId(req);
 
     // Case 1: Existing session - forward request to existing transport
     if (sessionId && sessions.has(sessionId)) {
@@ -147,6 +161,9 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
     if (!sessionId && isInitializeRequest(req.body)) {
       console.log("[MCP] New session initialization request");
 
+      // Create a dedicated MCP server for this session
+      const server = await createMcpServer();
+
       // Create transport
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
@@ -156,21 +173,8 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
         },
       });
 
-      // Create a dedicated MCP server for this session
-      const server = await createMcpServer();
-
       // Connect server to transport
       await server.connect(transport);
-
-      // Store session after connection is established
-      const newSessionId = transport.sessionId;
-      if (newSessionId) {
-        sessions.set(newSessionId, {
-          transport,
-          server,
-          createdAt: new Date(),
-        });
-      }
 
       // Clean up on transport close
       transport.onclose = () => {
@@ -183,6 +187,16 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
 
       // Handle the initialization request
       await transport.handleRequest(req, res, req.body);
+
+      // Ensure initialized session is stored for subsequent requests
+      const initializedSessionId = transport.sessionId;
+      if (initializedSessionId && !sessions.has(initializedSessionId)) {
+        sessions.set(initializedSessionId, {
+          transport,
+          server,
+          createdAt: new Date(),
+        });
+      }
       return;
     }
 
@@ -210,7 +224,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
 // GET /mcp - SSE stream for server-to-client notifications
 app.get("/mcp", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const sessionId = getSessionId(req);
 
     if (sessionId && sessions.has(sessionId)) {
       const session = sessions.get(sessionId)!;
@@ -229,7 +243,7 @@ app.get("/mcp", authMiddleware, async (req: Request, res: Response) => {
 // DELETE /mcp - Session termination
 app.delete("/mcp", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const sessionId = getSessionId(req);
 
     if (sessionId && sessions.has(sessionId)) {
       const session = sessions.get(sessionId)!;
