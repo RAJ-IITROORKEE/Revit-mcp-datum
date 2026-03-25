@@ -74,6 +74,29 @@ async function createMcpServer(): Promise<McpServer> {
 }
 
 async function handleStatelessRequest(req: Request, res: Response): Promise<void> {
+  const body = req.body as { id?: string | number | null; method?: string } | undefined;
+
+  // Direct fallback for tool catalog: return list without requiring prior session init.
+  // This prevents intermittent tools/list 400 errors behind non-sticky load balancers.
+  if (body?.method === "tools/list") {
+    const server = await createMcpServer();
+    const toolRegistry = (server as any)._registeredTools || {};
+    const tools = Object.keys(toolRegistry).map((name) => ({
+      name,
+      description: toolRegistry[name]?.description || "",
+      inputSchema: toolRegistry[name]?.inputSchema || { type: "object", properties: {} },
+    }));
+
+    res.status(200).json({
+      jsonrpc: "2.0",
+      id: body?.id ?? null,
+      result: {
+        tools,
+      },
+    });
+    return;
+  }
+
   const server = await createMcpServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
