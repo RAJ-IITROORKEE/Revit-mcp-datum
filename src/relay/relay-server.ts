@@ -276,6 +276,25 @@ function handleMessage(
       // Handled by ws.on("pong")
       break;
 
+    case "ping":
+      // Application-level keepalive from clients (e.g., Revit plugin)
+      if (currentClient) {
+        currentClient.lastPing = new Date();
+      }
+      send(
+        ws,
+        createMessage(
+          "pong",
+          {
+            status: "ready",
+            clientId,
+            message: "pong",
+          } as StatusPayload,
+          message.id
+        )
+      );
+      break;
+
     default:
       sendError(ws, message.id, RelayErrorCodes.INVALID_MESSAGE, `Unknown message type: ${message.type}`);
   }
