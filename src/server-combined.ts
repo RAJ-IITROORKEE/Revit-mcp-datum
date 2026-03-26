@@ -1,14 +1,15 @@
 /**
- * Combined Server - MCP HTTP + Relay WebSocket
+ * Combined Server - MCP HTTP + Relay WebSocket (Single Port for Railway)
  * 
- * This server runs both:
- * - MCP HTTP Server (for LLM clients) on port 3000
- * - Relay WebSocket Server (for Revit plugins) on port 8081
+ * This server runs both on the SAME port:
+ * - MCP HTTP endpoints (for LLM clients) 
+ * - Relay WebSocket (for Revit plugins) at /relay path
  * 
- * Deploy this single process to Railway/cloud for complete functionality.
+ * This is required for Railway which only exposes a single port.
  */
 
 import express, { Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
@@ -16,12 +17,17 @@ import {
 } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { registerTools } from "./tools/register.js";
-import { startRelayServer, stopRelayServer, createPairingToken, getConnectedClients, getPairingTokens } from "./relay/index.js";
+import { 
+  attachRelayToServer, 
+  createPairingToken, 
+  getTokenInfo,
+  getConnectedClients, 
+  getPairingTokens 
+} from "./relay/index.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
-const MCP_PORT = parseInt(process.env.PORT || process.env.MCP_PORT || "3000", 10);
-const RELAY_PORT = parseInt(process.env.RELAY_PORT || "8081", 10);
+const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 const API_KEY = (process.env.MCP_API_KEY || "").trim();
 
@@ -179,14 +185,39 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
   });
 });
 
-// ─── Pairing Token Endpoints ─────────────────────────────────────────────────
+// ─── Relay Token Endpoints ───────────────────────────────────────────────────
 
-app.post("/api/token", authMiddleware, (_req: Request, res: Response) => {
+// Generate new pairing token
+app.post("/api/relay/token", authMiddleware, (req: Request, res: Response) => {
   const token = createPairingToken();
+  const host = req.headers.host || `localhost:${PORT}`;
+  const protocol = req.secure ? "wss" : "ws";
+  
   res.json({
     token: token.token,
     expiresAt: token.expiresAt.toISOString(),
-    websocketUrl: `ws://${_req.headers.host?.replace(`:${MCP_PORT}`, `:${RELAY_PORT}`) || `localhost:${RELAY_PORT}`}`,
+    websocketUrl: `${protocol}://${host}/relay`,
+  });
+});
+
+// Get token info
+app.get("/api/relay/token/:token", authMiddleware, (req: Request, res: Response) => {
+  const tokenParam = req.params.token;
+  const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
+  const info = getTokenInfo(token);
+  
+  if (!info) {
+    res.status(404).json({ error: "Token not found or expired" });
+    return;
+  }
+  
+  res.json({
+    token: info.token,
+    createdAt: info.createdAt,
+    expiresAt: info.expiresAt,
+    used: info.used,
+    revitClientId: info.revitClientId || null,
+    mcpClientId: info.mcpClientId || null,
   });
 });
 
@@ -289,27 +320,31 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });
 });
 
-// ─── Start Servers ───────────────────────────────────────────────────────────
+// ─── Start Server ────────────────────────────────────────────────────────────
 
 async function start() {
-  // Start Relay WebSocket Server
-  await startRelayServer(RELAY_PORT, HOST);
+  // Create HTTP server from Express app
+  const httpServer = createServer(app);
 
-  // Start MCP HTTP Server
-  const httpServer = app.listen(MCP_PORT, HOST, () => {
+  // Attach WebSocket relay to the same server at /relay path
+  attachRelayToServer(httpServer);
+
+  // Start listening
+  httpServer.listen(PORT, HOST, () => {
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("  Revit MCP Combined Server (HTTP + WebSocket)");
+    console.log("  Revit MCP Combined Server (Single Port)");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log(`  MCP HTTP:    http://${HOST}:${MCP_PORT}/mcp`);
-    console.log(`  Relay WS:    ws://${HOST}:${RELAY_PORT}`);
-    console.log(`  Health:      http://${HOST}:${MCP_PORT}/health`);
-    console.log(`  New Token:   POST http://${HOST}:${MCP_PORT}/api/token`);
+    console.log(`  HTTP:        http://${HOST}:${PORT}`);
+    console.log(`  MCP:         http://${HOST}:${PORT}/mcp`);
+    console.log(`  Relay WS:    ws://${HOST}:${PORT}/relay`);
+    console.log(`  Health:      http://${HOST}:${PORT}/health`);
+    console.log(`  New Token:   POST http://${HOST}:${PORT}/api/relay/token`);
     console.log(`  Auth:        ${API_KEY ? "ENABLED" : "DISABLED"}`);
     console.log("═══════════════════════════════════════════════════════════");
   });
 
   httpServer.on("error", (err: Error) => {
-    console.error("[MCP] Server listen error:", err);
+    console.error("[Server] Listen error:", err);
   });
 
   // Graceful Shutdown
@@ -327,12 +362,9 @@ async function start() {
     }
     sessions.clear();
 
-    // Stop relay server
-    await stopRelayServer();
-
-    // Close HTTP server
+    // Close HTTP server (this also closes WebSocket connections)
     httpServer.close(() => {
-      console.log("[Server] All servers stopped");
+      console.log("[Server] Server stopped");
       process.exit(0);
     });
 

@@ -11,7 +11,7 @@
     "clean": "rimraf build",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "start": "node build/server-http.js",
+    "start": "node build/server-combined.js",
     "start:stdio": "node build/index.js",
     "start:relay": "node build/relay/relay-server.js",
     "start:all": "node build/server-combined.js",

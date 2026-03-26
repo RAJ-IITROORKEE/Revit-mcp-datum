@@ -132,6 +132,25 @@ export function startRelayServer(port = RELAY_PORT, host = RELAY_HOST): Promise<
   });
 }
 
+/**
+ * Attach WebSocket relay to an existing HTTP server (for Railway single-port deployment)
+ */
+export function attachRelayToServer(server: HttpServer): WebSocketServer {
+  wss = new WebSocketServer({ server, path: "/relay" });
+
+  wss.on("connection", (ws, req) => {
+    handleConnection(ws, req);
+  });
+
+  // Start ping interval if not already running
+  if (!pingInterval) {
+    pingInterval = setInterval(pingAllClients, PING_INTERVAL);
+  }
+
+  console.log("[Relay] WebSocket attached to existing server at /relay");
+  return wss;
+}
+
 export function stopRelayServer(): Promise<void> {
   return new Promise((resolve) => {
     clearInterval(pingInterval);
@@ -495,7 +514,7 @@ export function getPairingTokens(): PairingToken[] {
   return Array.from(pairingTokens.values());
 }
 
-export { createPairingToken };
+export { createPairingToken, getTokenInfo };
 
 // ─── Standalone Entry Point ──────────────────────────────────────────────────
 

@@ -11,9 +11,11 @@
 export {
   startRelayServer,
   stopRelayServer,
+  attachRelayToServer,
   getConnectedClients,
   getPairingTokens,
   createPairingToken,
+  getTokenInfo,
 } from "./relay-server.js";
 
 // Client (for MCP server integration)
