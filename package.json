@@ -13,6 +13,8 @@
     "build": "tsc",
     "start": "node build/server-http.js",
     "start:stdio": "node build/index.js",
+    "start:relay": "node build/relay/relay-server.js",
+    "start:all": "node build/server-combined.js",
     "start:secure": "node server-secure.js"
   },
   "files": [

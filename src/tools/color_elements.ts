@@ -34,7 +34,7 @@ export function registerColorElementsTool(server: McpServer) {
         try {
           const response = await withRevitConnection(async (revitClient) => {
             return await revitClient.sendCommand("color_splash", params);
-          });
+          }) as { success: boolean; results?: any[]; totalElements?: number; coloredGroups?: number; message?: string };
 
           // Format the response into a more user-friendly output
           if (response.success) {
