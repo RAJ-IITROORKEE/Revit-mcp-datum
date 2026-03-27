@@ -22,7 +22,9 @@ import {
   createPairingToken, 
   getTokenInfo,
   getConnectedClients, 
-  getPairingTokens 
+  getPairingTokens,
+  getRelayClient,
+  initRelayClient,
 } from "./relay/index.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -40,6 +42,27 @@ interface Session {
 }
 
 const sessions: Map<string, Session> = new Map();
+let activeRelayToken: string | null = null;
+
+function getRelayWebSocketUrl(req: Request): string {
+  const host = req.headers.host || `localhost:${PORT}`;
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const proto = typeof forwardedProto === "string" ? forwardedProto : req.secure ? "https" : "http";
+  const wsProto = proto === "https" ? "wss" : "ws";
+  return `${wsProto}://${host}/relay`;
+}
+
+async function ensureMcpRelayClient(req: Request, token: string): Promise<void> {
+  const existing = getRelayClient();
+  if (existing && activeRelayToken === token && existing.connected) {
+    return;
+  }
+
+  const websocketUrl = getRelayWebSocketUrl(req);
+  await initRelayClient(websocketUrl, token);
+  activeRelayToken = token;
+  console.log(`[Relay] MCP relay client initialized for token ${token}`);
+}
 
 function getSessionId(req: Request): string | undefined {
   const value = req.headers["mcp-session-id"];
@@ -188,20 +211,27 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
 // ─── Relay Token Endpoints ───────────────────────────────────────────────────
 
 // Generate new pairing token
-app.post("/api/relay/token", authMiddleware, (req: Request, res: Response) => {
-  const token = createPairingToken();
-  const host = req.headers.host || `localhost:${PORT}`;
-  const protocol = req.secure ? "wss" : "ws";
-  
-  res.json({
-    token: token.token,
-    expiresAt: token.expiresAt.toISOString(),
-    websocketUrl: `${protocol}://${host}/relay`,
-  });
+app.post("/api/relay/token", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const token = createPairingToken();
+    const websocketUrl = getRelayWebSocketUrl(req);
+
+    // Auto-connect MCP relay client so plugin can pair immediately.
+    await ensureMcpRelayClient(req, token.token);
+
+    res.json({
+      token: token.token,
+      expiresAt: token.expiresAt.toISOString(),
+      websocketUrl,
+    });
+  } catch (error) {
+    console.error("[Relay] Failed to initialize MCP relay client:", error);
+    res.status(500).json({ error: "Failed to initialize relay client" });
+  }
 });
 
 // Get token info
-app.get("/api/relay/token/:token", authMiddleware, (req: Request, res: Response) => {
+app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Response) => {
   const tokenParam = req.params.token;
   const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
   const info = getTokenInfo(token);
@@ -211,13 +241,24 @@ app.get("/api/relay/token/:token", authMiddleware, (req: Request, res: Response)
     return;
   }
   
+  // Opportunistic attach: if Revit is connected but MCP client is not, attempt to connect MCP side.
+  if (info.revitClientId && !info.mcpClientId) {
+    try {
+      await ensureMcpRelayClient(req, token);
+    } catch (error) {
+      console.error(`[Relay] Lazy MCP attach failed for token ${token}:`, error);
+    }
+  }
+
+  const refreshedInfo = getTokenInfo(token);
+
   res.json({
     token: info.token,
     createdAt: info.createdAt,
     expiresAt: info.expiresAt,
     used: info.used,
-    revitClientId: info.revitClientId || null,
-    mcpClientId: info.mcpClientId || null,
+    revitClientId: refreshedInfo?.revitClientId || info.revitClientId || null,
+    mcpClientId: refreshedInfo?.mcpClientId || info.mcpClientId || null,
   });
 });
 
