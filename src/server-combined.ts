@@ -266,6 +266,30 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
 
 app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   try {
+    // Route MCP tool calls through the correct relay pairing token (per-request).
+    // Datum sends this header so the MCP server can attach to the matching Revit plugin.
+    const relayTokenHeader = req.headers["x-relay-token"];
+    const relayToken = typeof relayTokenHeader === "string"
+      ? relayTokenHeader.trim()
+      : Array.isArray(relayTokenHeader)
+        ? String(relayTokenHeader[0] || "").trim()
+        : "";
+
+    if (relayToken) {
+      const tokenInfo = getTokenInfo(relayToken);
+      if (!tokenInfo) {
+        res.status(400).json({
+          jsonrpc: "2.0",
+          error: { code: -32001, message: "Invalid or expired relay token" },
+          id: req.body?.id ?? null,
+        });
+        return;
+      }
+
+      // Ensure MCP relay client is connected with this specific token.
+      await ensureMcpRelayClient(req, relayToken);
+    }
+
     const sessionId = getSessionId(req);
 
     if (sessionId && sessions.has(sessionId)) {
