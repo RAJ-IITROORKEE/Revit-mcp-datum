@@ -58,6 +58,13 @@ const clients = new Map<string, ConnectedClient>();
 const pairingTokens = new Map<string, PairingToken>();
 const tokenToClients = new Map<string, { revit?: string; mcp?: string }>();
 
+// Pending promises for sendCommandViaToken() — keyed by messageId
+const directPending = new Map<string, {
+  resolve: (result: unknown) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+}>();
+
 // ─── Server Setup ────────────────────────────────────────────────────────────
 
 let httpServer: HttpServer;
@@ -419,11 +426,25 @@ function handleCommand(client: ConnectedClient, message: RelayMessage) {
 
 function handleResponse(client: ConnectedClient, message: RelayMessage) {
   const payload = message.payload as ResponsePayload;
-  
-  // Find paired MCP server
+
+  // Primary path: resolve a Promise from sendCommandViaToken() (no WS self-connection needed)
+  const directHandler = directPending.get(message.id);
+  if (directHandler) {
+    clearTimeout(directHandler.timeout);
+    directPending.delete(message.id);
+    if (payload.success) {
+      directHandler.resolve(payload.result);
+    } else {
+      directHandler.reject(new Error(payload.error?.message || "Revit command failed"));
+    }
+    console.log(`[Relay] Resolved direct pending for ${message.id} from ${client.id}`);
+    return;
+  }
+
+  // Legacy path: forward to an mcp-server WS client (backwards compat)
   const tokenClients = tokenToClients.get(client.pairingToken);
   if (!tokenClients?.mcp) {
-    console.warn(`[Relay] No MCP server to receive response for message ${message.id}`);
+    console.warn(`[Relay] No handler for response ${message.id} — no direct pending and no MCP WS client`);
     return;
   }
 
@@ -433,7 +454,7 @@ function handleResponse(client: ConnectedClient, message: RelayMessage) {
     return;
   }
 
-  // Clear timeout
+  // Clear timeout on MCP WS client
   const pending = mcpClient.pendingCommands.get(message.id);
   if (pending) {
     clearTimeout(pending.timeout);
@@ -442,7 +463,7 @@ function handleResponse(client: ConnectedClient, message: RelayMessage) {
 
   console.log(`[Relay] Routing response for ${message.id} from ${client.id} to ${mcpClient.id}`);
 
-  // Forward response to MCP server
+  // Forward response to MCP WS client
   const responseMessage = createMessage("response", payload, message.id);
   send(mcpClient.ws, responseMessage);
 }
@@ -534,6 +555,55 @@ export function getPairingTokens(): PairingToken[] {
 }
 
 export { createPairingToken, getTokenInfo };
+
+// ─── Direct Command Routing ───────────────────────────────────────────────────
+
+/**
+ * Send a command directly to the Revit plugin for a given pairing token.
+ *
+ * Bypasses the self-connecting WS relay client (globalRelayClient).
+ * Uses the in-memory tokenToClients Map to find the Revit plugin WS directly.
+ *
+ * @param token    Pairing token (X-Relay-Token from HTTP header)
+ * @param command  Command name (e.g. "create_wall")
+ * @param params   Command parameters
+ * @param timeoutMs  Timeout in ms (default 30s)
+ */
+export async function sendCommandViaToken(
+  token: string,
+  command: string,
+  params: unknown,
+  timeoutMs = 30000
+): Promise<unknown> {
+  const tokenClients = tokenToClients.get(token);
+  if (!tokenClients?.revit) {
+    throw new Error(
+      "No Revit plugin connected for this token. " +
+      "Open Revit, go to Settings → Cloud Relay and click Connect."
+    );
+  }
+
+  const revitClient = clients.get(tokenClients.revit);
+  if (!revitClient || revitClient.ws.readyState !== WebSocket.OPEN) {
+    throw new Error("Revit plugin WebSocket is not open. Waiting for reconnection.");
+  }
+
+  const messageId = generateMessageId();
+
+  return new Promise<unknown>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      directPending.delete(messageId);
+      reject(new Error(`Revit command '${command}' timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    directPending.set(messageId, { resolve, reject, timeout });
+
+    const payload: CommandPayload = { command, params, timeout: timeoutMs };
+    send(revitClient.ws, createMessage("command", payload, messageId));
+
+    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${revitClient.id} (msgId=${messageId})`);
+  });
+}
 
 // ─── Standalone Entry Point ──────────────────────────────────────────────────
 

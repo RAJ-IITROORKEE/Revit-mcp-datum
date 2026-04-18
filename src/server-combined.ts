@@ -23,8 +23,7 @@ import {
   getTokenInfo,
   getConnectedClients, 
   getPairingTokens,
-  getRelayClient,
-  initRelayClient,
+  relayTokenStorage,
 } from "./relay/index.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -42,7 +41,6 @@ interface Session {
 }
 
 const sessions: Map<string, Session> = new Map();
-let activeRelayToken: string | null = null;
 
 function getRelayWebSocketUrl(req: Request): string {
   const host = req.headers.host || `localhost:${PORT}`;
@@ -50,18 +48,6 @@ function getRelayWebSocketUrl(req: Request): string {
   const proto = typeof forwardedProto === "string" ? forwardedProto : req.secure ? "https" : "http";
   const wsProto = proto === "https" ? "wss" : "ws";
   return `${wsProto}://${host}/relay`;
-}
-
-async function ensureMcpRelayClient(req: Request, token: string): Promise<void> {
-  const existing = getRelayClient();
-  if (existing && activeRelayToken === token && existing.connected) {
-    return;
-  }
-
-  const websocketUrl = getRelayWebSocketUrl(req);
-  await initRelayClient(websocketUrl, token);
-  activeRelayToken = token;
-  console.log(`[Relay] MCP relay client initialized for token ${token}`);
 }
 
 function getSessionId(req: Request): string | undefined {
@@ -212,22 +198,14 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
 
 // Generate new pairing token
 app.post("/api/relay/token", authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const token = createPairingToken();
-    const websocketUrl = getRelayWebSocketUrl(req);
+  const token = createPairingToken();
+  const websocketUrl = getRelayWebSocketUrl(req);
 
-    // Auto-connect MCP relay client so plugin can pair immediately.
-    await ensureMcpRelayClient(req, token.token);
-
-    res.json({
-      token: token.token,
-      expiresAt: token.expiresAt.toISOString(),
-      websocketUrl,
-    });
-  } catch (error) {
-    console.error("[Relay] Failed to initialize MCP relay client:", error);
-    res.status(500).json({ error: "Failed to initialize relay client" });
-  }
+  res.json({
+    token: token.token,
+    expiresAt: token.expiresAt.toISOString(),
+    websocketUrl,
+  });
 });
 
 // Get token info
@@ -240,25 +218,14 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
     res.status(404).json({ error: "Token not found or expired" });
     return;
   }
-  
-  // Opportunistic attach: if Revit is connected but MCP client is not, attempt to connect MCP side.
-  if (info.revitClientId && !info.mcpClientId) {
-    try {
-      await ensureMcpRelayClient(req, token);
-    } catch (error) {
-      console.error(`[Relay] Lazy MCP attach failed for token ${token}:`, error);
-    }
-  }
-
-  const refreshedInfo = getTokenInfo(token);
 
   res.json({
     token: info.token,
     createdAt: info.createdAt,
     expiresAt: info.expiresAt,
     used: info.used,
-    revitClientId: refreshedInfo?.revitClientId || info.revitClientId || null,
-    mcpClientId: refreshedInfo?.mcpClientId || info.mcpClientId || null,
+    revitClientId: info.revitClientId || null,
+    mcpClientId: info.mcpClientId || null,
   });
 });
 
@@ -266,8 +233,7 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
 
 app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   try {
-    // Route MCP tool calls through the correct relay pairing token (per-request).
-    // Datum sends this header so the MCP server can attach to the matching Revit plugin.
+    // Extract relay token from header — Datum sends this to identify the user's Revit session.
     const relayTokenHeader = req.headers["x-relay-token"];
     const relayToken = typeof relayTokenHeader === "string"
       ? relayTokenHeader.trim()
@@ -285,55 +251,66 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
         });
         return;
       }
-
-      // Ensure MCP relay client is connected with this specific token.
-      await ensureMcpRelayClient(req, relayToken);
     }
 
-    const sessionId = getSessionId(req);
+    // Thread the relay token through the MCP tool execution chain via AsyncLocalStorage.
+    // ConnectionManager.withRevitConnection() reads it from getRelayToken() — no global state.
+    await relayTokenStorage.run(relayToken, async () => {
+      const sessionId = getSessionId(req);
 
-    if (sessionId && sessions.has(sessionId)) {
-      const session = sessions.get(sessionId)!;
-      await session.transport.handleRequest(req, res, req.body);
-      return;
-    }
+      if (sessionId && sessions.has(sessionId)) {
+        const session = sessions.get(sessionId)!;
+        await session.transport.handleRequest(req, res, req.body);
+        return;
+      }
 
-    if (!sessionId && isInitializeRequest(req.body)) {
-      console.log("[MCP] New session initialization request");
-      const server = await createMcpServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        enableJsonResponse: true,
-        onsessioninitialized: (sid: string) => {
-          console.log(`[MCP] Session initialized: ${sid}`);
+      if (!sessionId && isInitializeRequest(req.body)) {
+        console.log("[MCP] New session initialization request");
+        const server = await createMcpServer();
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          enableJsonResponse: true,
+          onsessioninitialized: (sid: string) => {
+            console.log(`[MCP] Session initialized: ${sid}`);
+            if (!sessions.has(sid)) {
+              sessions.set(sid, { transport, server, createdAt: new Date() });
+            }
+          },
+        });
+
+        await server.connect(transport);
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid && sessions.has(sid)) {
+            sessions.delete(sid);
+            console.log(`[MCP] Session closed: ${sid}`);
+          }
+        };
+
+        await transport.handleRequest(req, res, req.body);
+
+        const initializedSessionId = transport.sessionId;
+        if (initializedSessionId && !sessions.has(initializedSessionId)) {
+          sessions.set(initializedSessionId, { transport, server, createdAt: new Date() });
+        }
+        return;
+      }
+
+      // No matching session — Railway may have restarted. Return a clean JSON-RPC error
+      // so the client can detect and re-initialize the session (new initialize call).
+      const method = typeof req.body?.method === "string" ? req.body.method : "unknown";
+      const reqId = req.body?.id ?? null;
+      console.warn(`[MCP] No session found for sessionId — returning session-expired error. method=${method}`);
+      res.status(400).json({
+        jsonrpc: "2.0",
+        id: reqId,
+        error: {
+          code: -32000,
+          message: "Server not initialized: session expired or server restarted. Please reinitialize.",
         },
       });
-
-      await server.connect(transport);
-
-      transport.onclose = () => {
-        const sid = transport.sessionId;
-        if (sid && sessions.has(sid)) {
-          sessions.delete(sid);
-          console.log(`[MCP] Session closed: ${sid}`);
-        }
-      };
-
-      await transport.handleRequest(req, res, req.body);
-
-      const initializedSessionId = transport.sessionId;
-      if (initializedSessionId && !sessions.has(initializedSessionId)) {
-        sessions.set(initializedSessionId, {
-          transport,
-          server,
-          createdAt: new Date(),
-        });
-      }
-      return;
-    }
-
-    console.warn(`[MCP] Stateless fallback for method=${typeof req.body?.method === "string" ? req.body.method : "unknown"}`);
-    await handleStatelessRequest(req, res);
+    });
   } catch (error) {
     console.error("[MCP] Error handling POST /mcp:", error);
     if (!res.headersSent) {

@@ -1,5 +1,6 @@
 import { RevitClientConnection } from "./SocketClient.js";
-import { getRelayClient, RelayClient } from "../relay/index.js";
+import { sendCommandViaToken } from "../relay/relay-server.js";
+import { getRelayToken } from "../relay/relay-context.js";
 
 /**
  * Connection mode for Revit communication
@@ -92,22 +93,19 @@ class DirectRevitClient implements IRevitClient {
 }
 
 /**
- * Wrapper around relay client to match IRevitClient interface
+ * Relay client that routes commands directly through the in-memory relay hub.
+ * Uses the relay token from AsyncLocalStorage (set by the /mcp HTTP handler).
+ * No self-connecting WebSocket — zero extra network hops.
  */
-class RelayRevitClient implements IRevitClient {
-  private relayClient: RelayClient;
+class InProcessRelayRevitClient implements IRevitClient {
+  private token: string;
 
-  constructor(relayClient: RelayClient) {
-    this.relayClient = relayClient;
+  constructor(token: string) {
+    this.token = token;
   }
 
   async sendCommand(command: string, params: unknown): Promise<unknown> {
-    const response = await this.relayClient.sendCommand(command, params);
-    if (response.success) {
-      return response.result;
-    } else {
-      throw new Error(response.error?.message || "Command failed");
-    }
+    return sendCommandViaToken(this.token, command, params);
   }
 }
 
@@ -115,15 +113,15 @@ class RelayRevitClient implements IRevitClient {
 
 /**
  * Connect to Revit client and execute operation
- * 
+ *
  * Supports two modes:
  * - **Direct mode** (default): Connects to localhost:8080 via TCP socket.
  *   Used for local development with Claude Desktop.
- * 
- * - **Relay mode**: Connects through cloud WebSocket relay.
- *   Used for production deployment where users connect via web.
+ *
+ * - **Relay mode**: Routes commands via the in-memory relay hub using the
+ *   per-request relay token from AsyncLocalStorage.
  *   Set REVIT_CONNECTION_MODE=relay to enable.
- * 
+ *
  * @param operation Operation function to execute after successful connection
  * @returns Result of the operation
  */
@@ -157,29 +155,25 @@ async function withDirectConnection<T>(
 }
 
 /**
- * Connection to Revit via cloud relay server
+ * In-process relay connection.
+ * Reads the relay token from AsyncLocalStorage (set by the /mcp HTTP handler).
+ * Calls sendCommandViaToken() which routes directly to the Revit plugin WS
+ * already stored in the relay server's tokenToClients Map — no extra WS hop.
  */
 async function withRelayConnection<T>(
   operation: (client: IRevitClient) => Promise<T>
 ): Promise<T> {
-  const relayClient = getRelayClient();
-  
-  if (!relayClient) {
+  const token = getRelayToken();
+
+  if (!token) {
     throw new Error(
-      "Relay client not initialized. Call initRelayClient() first with relay URL and pairing token."
+      "No relay token in async context. " +
+      "Ensure X-Relay-Token header is set and the /mcp handler wraps requests in relayTokenStorage.run()."
     );
   }
 
-  if (!relayClient.connected) {
-    throw new Error("Relay client not connected to relay server");
-  }
-
-  if (!relayClient.paired) {
-    throw new Error("Relay client not paired with Revit plugin. Waiting for Revit to connect with pairing token.");
-  }
-
-  const client = new RelayRevitClient(relayClient);
-  return await operation(client);
+  const client = new InProcessRelayRevitClient(token);
+  return operation(client);
 }
 
 // ─── Legacy Export for Compatibility ─────────────────────────────────────────

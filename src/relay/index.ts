@@ -1,9 +1,10 @@
 /**
  * Relay Module - Cloud-to-Local Revit Communication
- * 
+ *
  * Exports:
  * - RelayServer: WebSocket hub for routing commands
- * - RelayClient: Client for MCP server to send commands via relay
+ * - sendCommandViaToken: Direct in-memory command routing (no self-connecting WS client)
+ * - relay-context: AsyncLocalStorage for threading relay token through MCP tool chain
  * - Types: Message types and utilities
  */
 
@@ -16,17 +17,11 @@ export {
   getPairingTokens,
   createPairingToken,
   getTokenInfo,
+  sendCommandViaToken,
 } from "./relay-server.js";
 
-// Client (for MCP server integration)
-export {
-  RelayClient,
-  getRelayClient,
-  initRelayClient,
-  closeRelayClient,
-  type RelayClientEvent,
-  type RelayClientEventHandler,
-} from "./relay-client.js";
+// Async context for per-request relay token threading
+export { relayTokenStorage, getRelayToken } from "./relay-context.js";
 
 // Types
 export {
