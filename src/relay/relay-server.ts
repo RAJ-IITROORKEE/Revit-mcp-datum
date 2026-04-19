@@ -206,6 +206,40 @@ function getTokenInfo(token: string): PairingToken | null {
   return info;
 }
 
+/**
+ * Ensure a token is registered in memory, re-creating it if the server restarted.
+ *
+ * When Railway restarts, all in-memory pairingTokens are wiped. The Revit plugin
+ * still holds the old token and can call this endpoint to re-register it so that
+ * both sides can resume using the same token without the user having to re-enter it.
+ *
+ * @param token  Existing 8-character pairing token from the plugin
+ * @returns      The PairingToken entry (existing or freshly re-created)
+ */
+export function ensureTokenRegistered(token: string): PairingToken {
+  if (!isValidPairingToken(token)) {
+    throw new Error(`Invalid token format: "${token}". Must be 8 uppercase alphanumeric characters.`);
+  }
+
+  const existing = getTokenInfo(token);
+  if (existing) {
+    console.log(`[Relay] ensureTokenRegistered: token already live: ${token}`);
+    return existing;
+  }
+
+  // Token unknown (server restarted) — re-register under the same token string
+  const entry: PairingToken = {
+    token,
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000),
+    used: false,
+  };
+  pairingTokens.set(token, entry);
+  tokenToClients.set(token, {});
+  console.log(`[Relay] ensureTokenRegistered: re-registered token after restart: ${token}`);
+  return entry;
+}
+
 function validateToken(token: string): boolean {
   if (!isValidPairingToken(token)) return false;
   const info = getTokenInfo(token);

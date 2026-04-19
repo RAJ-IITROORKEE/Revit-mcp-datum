@@ -17,6 +17,7 @@ export {
   getPairingTokens,
   createPairingToken,
   getTokenInfo,
+  ensureTokenRegistered,
   sendCommandViaToken,
 } from "./relay-server.js";
 

@@ -21,6 +21,7 @@ import {
   attachRelayToServer, 
   createPairingToken, 
   getTokenInfo,
+  ensureTokenRegistered,
   getConnectedClients, 
   getPairingTokens,
   relayTokenStorage,
@@ -227,6 +228,31 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
     revitClientId: info.revitClientId || null,
     mcpClientId: info.mcpClientId || null,
   });
+});
+
+// Validate and re-register an existing token (used by Revit plugin after Railway restart).
+// If the server restarted and lost in-memory state, this re-creates the token entry so
+// both Revit and Datum can resume using the same token without user intervention.
+app.post("/api/relay/validate-and-register", authMiddleware, async (req: Request, res: Response) => {
+  const { token } = req.body as { token?: string };
+  if (!token || typeof token !== "string") {
+    res.status(400).json({ error: "Missing or invalid token in request body" });
+    return;
+  }
+
+  try {
+    const tokenInfo = ensureTokenRegistered(token);
+    const websocketUrl = getRelayWebSocketUrl(req);
+    res.json({
+      token: tokenInfo.token,
+      expiresAt: tokenInfo.expiresAt.toISOString(),
+      websocketUrl,
+      reregistered: tokenInfo.createdAt > new Date(Date.now() - 5000), // fresh if created in last 5s
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(400).json({ error: message });
+  }
 });
 
 // ─── MCP Endpoints ───────────────────────────────────────────────────────────
