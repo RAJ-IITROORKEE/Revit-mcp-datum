@@ -20,6 +20,36 @@ export function registerSendCodeToRevitTool(server: McpServer) {
         ),
     },
     async (args, extra) => {
+      // PYTHON CODE DETECTION: Reject Python/pyRevit code before sending to Revit
+      const code = args.code;
+      const pythonIndicators = [
+        'import ',
+        'from ',
+        'def ',
+        'pyrevit',
+        'clr.AddReference',
+        '__revit__',
+        'IN[',
+        'OUT =',
+        'TransactionManager',
+        'UnwrapElement',
+      ];
+
+      const hasPythonSyntax = pythonIndicators.some(indicator => 
+        code.toLowerCase().includes(indicator.toLowerCase())
+      );
+
+      if (hasPythonSyntax) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ REJECTED: Python/pyRevit code detected!\n\nThis tool ONLY supports C# code via Roslyn compiler.\n\n🚫 Python, pyRevit, Dynamo Python, and IronPython are NOT supported.\n\n✅ Please rewrite using C# syntax:\n- Use 'new FilteredElementCollector(document)' instead of Python iterators\n- Use 'typeof(Wall)' instead of Python type syntax\n- Use 'var' or explicit types instead of Python dynamic typing\n- Must include a return statement\n\nExample C# code:\nvar walls = new FilteredElementCollector(document)\n    .OfClass(typeof(Wall))\n    .WhereElementIsNotElementType()\n    .ToElements();\nreturn $"Found {walls.Count} walls";`,
+            },
+          ],
+        };
+      }
+
       const params = {
         code: args.code,
         parameters: args.parameters || [],
@@ -34,7 +64,7 @@ export function registerSendCodeToRevitTool(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Code execution successful!\nResult: ${JSON.stringify(
+              text: `✅ Code execution successful!\n\nResult:\n${JSON.stringify(
                 response,
                 null,
                 2
@@ -47,9 +77,9 @@ export function registerSendCodeToRevitTool(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `Code execution failed: ${
+              text: `❌ Code execution failed: ${
                 error instanceof Error ? error.message : String(error)
-              }`,
+              }\n\nTip: Ensure you're using C# syntax, not Python. Code must include a return statement.`,
             },
           ],
         };

@@ -74,7 +74,9 @@ export function registerPlaceElectricalFixtureTool(server: McpServer) {
     async (args) => {
       try {
         const response = await withRevitConnection(async (revitClient) => {
-          return await revitClient.sendCommand("place_electrical_fixture", args);
+          // Use 10 minute timeout for electrical fixture placement
+          // that may involve multiple fixtures and host surface detection
+          return await revitClient.sendCommand("place_electrical_fixture", args, 600000);
         });
         return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
       } catch (error) {

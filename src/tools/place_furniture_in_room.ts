@@ -110,9 +110,12 @@ Use get_rooms_list or get_element_spatial_data to get room boundaries and dimens
 
       try {
         const response = await withRevitConnection(async (revitClient) => {
+          // Use 10 minute timeout for complex furniture placement operations
+          // that may involve multiple furniture pieces and boundary validation
           return await revitClient.sendCommand(
             "place_furniture_in_room",
-            params
+            params,
+            600000 // 10 minutes
           );
         });
 

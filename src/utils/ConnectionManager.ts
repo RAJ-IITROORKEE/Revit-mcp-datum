@@ -37,7 +37,7 @@ function getDirectConnectionSettings(): { host: string; port: number } {
  * Interface that both direct and relay clients implement
  */
 export interface IRevitClient {
-  sendCommand(command: string, params: unknown): Promise<unknown>;
+  sendCommand(command: string, params: unknown, timeoutMs?: number): Promise<unknown>;
 }
 
 /**
@@ -83,7 +83,7 @@ class DirectRevitClient implements IRevitClient {
     });
   }
 
-  async sendCommand(command: string, params: unknown): Promise<unknown> {
+  async sendCommand(command: string, params: unknown, timeoutMs?: number): Promise<unknown> {
     return this.connection.sendCommand(command, params);
   }
 
@@ -104,8 +104,8 @@ class InProcessRelayRevitClient implements IRevitClient {
     this.token = token;
   }
 
-  async sendCommand(command: string, params: unknown): Promise<unknown> {
-    return sendCommandViaToken(this.token, command, params);
+  async sendCommand(command: string, params: unknown, timeoutMs?: number): Promise<unknown> {
+    return sendCommandViaToken(this.token, command, params, timeoutMs);
   }
 }
 
