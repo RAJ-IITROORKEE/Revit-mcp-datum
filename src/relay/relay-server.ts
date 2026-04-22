@@ -446,9 +446,9 @@ function handleCommand(client: ConnectedClient, message: RelayMessage) {
     if (pending) {
       client.pendingCommands.delete(message.id);
       sendError(client.ws, message.id, RelayErrorCodes.COMMAND_TIMEOUT, 
-        `Command ${payload.command} timed out after ${payload.timeout || 30000}ms`);
+        `Command ${payload.command} timed out after ${payload.timeout || 300000}ms`);
     }
-  }, payload.timeout || 30000);
+  }, payload.timeout || 300000);
 
   // Store in MCP client's pending commands for response routing
   client.pendingCommands.set(message.id, {
@@ -601,13 +601,13 @@ export { createPairingToken, getTokenInfo };
  * @param token    Pairing token (X-Relay-Token from HTTP header)
  * @param command  Command name (e.g. "create_wall")
  * @param params   Command parameters
- * @param timeoutMs  Timeout in ms (default 30s)
+ * @param timeoutMs  Timeout in ms (default 5 minutes to match socket client)
  */
 export async function sendCommandViaToken(
   token: string,
   command: string,
   params: unknown,
-  timeoutMs = 30000
+  timeoutMs = 300000
 ): Promise<unknown> {
   const tokenClients = tokenToClients.get(token);
   if (!tokenClients?.revit) {

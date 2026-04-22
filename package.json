@@ -11,10 +11,10 @@
     "clean": "rimraf build",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "start": "node build/server-combined.js",
-    "start:stdio": "node build/index.js",
-    "start:relay": "node build/relay/relay-server.js",
-    "start:all": "node build/server-combined.js",
+    "start": "node --env-file=.env build/server-combined.js",
+    "start:stdio": "node --env-file=.env build/index.js",
+    "start:relay": "node --env-file=.env build/relay/relay-server.js",
+    "start:all": "node --env-file=.env build/server-combined.js",
     "start:secure": "node server-secure.js"
   },
   "files": [
