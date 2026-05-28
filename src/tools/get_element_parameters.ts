@@ -30,10 +30,28 @@ export function registerGetElementParametersTool(server: McpServer) {
         .string()
         .optional()
         .describe("Filter parameters by name (partial match). Example: 'Width' returns all parameters containing 'Width'."),
-      parameterGroupFilter: z
-        .array(z.string())
-        .optional()
-        .describe("Filter by parameter group names (e.g., 'PG_GEOMETRY', 'PG_IDENTITY_DATA', 'PG_MATERIALS', 'PG_STRUCTURAL')"),
+       parameterGroupFilter: z
+         .array(
+           z.enum([
+             "PG_GEOMETRY",
+             "PG_IDENTITY_DATA",
+             "PG_MATERIALS",
+             "PG_STRUCTURAL",
+             "PG_CONSTRAINTS",
+             "PG_CONSTRUCTION",
+             "PG_GRAPHICS",
+             "PG_ANALYSIS",
+             "PG_PHASING",
+             "PG_KEYNOTING",
+             "PG_ADSK_MEP",
+             "PG_TEXT",
+             "PG_DATA",
+           ])
+         )
+         .optional()
+         .describe(
+           "Filter by parameter groups. Examples: PG_GEOMETRY (dimensions/coordinates), PG_IDENTITY_DATA (name/mark), PG_MATERIALS (finish), PG_STRUCTURAL (load info), PG_PHASING (phase/workset), PG_ADSK_MEP (MEP data)"
+         ),
       includeEmptyValues: z
         .boolean()
         .optional()

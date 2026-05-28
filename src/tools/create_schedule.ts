@@ -30,17 +30,18 @@ export function registerCreateScheduleTool(server: McpServer) {
         .string()
         .optional()
         .describe("Built-in category for generic schedules (e.g., 'OST_Doors', 'OST_Windows', 'OST_Furniture'). Required for GenericSchedule type."),
-      fields: z
-        .array(
-          z.object({
-            parameterName: z.string().describe("Parameter name to include as column (e.g., 'Mark', 'Family', 'Type', 'Width', 'Height', 'Area')"),
-            heading: z.string().optional().describe("Custom column heading. Uses parameter name if not specified."),
-            width: z.number().optional().describe("Column width in mm"),
-            alignment: z.enum(["Left", "Center", "Right"]).optional().describe("Text alignment in column"),
-          })
-        )
-        .optional()
-        .describe("Fields (columns) to include in the schedule. If not specified, uses default fields for the schedule type."),
+       fields: z
+         .array(
+           z.object({
+             parameterName: z.string().describe("Parameter name to include as column (e.g., 'Mark', 'Family', 'Type', 'Width', 'Height', 'Area', 'Level', 'Phase')"),
+             heading: z.string().optional().describe("Custom column heading (displays above parameter name)"),
+             width: z.number().min(50).optional().describe("Column width in mm (minimum 50mm for readability)"),
+             alignment: z.enum(["Left", "Center", "Right"]).optional().describe("Text alignment in column"),
+           })
+         )
+         .min(1)
+         .optional()
+         .describe("Fields (columns) to include in the schedule. If not specified, uses default fields for the schedule type. Recommend at least 1-3 fields."),
       sortBy: z
         .array(
           z.object({

@@ -62,11 +62,13 @@ export function registerCreateRoofTool(server: McpServer) {
                             "Whether this boundary edge defines a slope. If false, the edge is a gable (vertical) end."
                           ),
                         slopeAngle: z
-                          .number()
-                          .optional()
-                          .describe(
-                            "Slope angle in degrees from horizontal for this edge (e.g., 30 degrees). Overrides the default slope."
-                          ),
+                           .number()
+                           .min(0)
+                           .max(90)
+                           .optional()
+                           .describe(
+                             "Slope angle in degrees from horizontal for this edge (0-90 degrees, e.g., 30). Overrides the default slope."
+                           ),
                         overhang: z
                           .number()
                           .optional()
@@ -135,11 +137,13 @@ export function registerCreateRoofTool(server: McpServer) {
               .optional()
               .describe("Extrusion profile definition for 'Extrusion' method"),
             defaultSlopeAngle: z
-              .number()
-              .optional()
-              .describe(
-                "Default slope angle in degrees for all boundary edges that define slope (for Footprint roofs)"
-              ),
+               .number()
+               .min(0)
+               .max(90)
+               .optional()
+               .describe(
+                 "Default slope angle in degrees (0-90) for all boundary edges that define slope (for Footprint roofs). Example: 30 for typical residential pitch."
+               ),
             defaultOverhang: z
               .number()
               .optional()

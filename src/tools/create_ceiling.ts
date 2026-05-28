@@ -153,6 +153,10 @@ Use get_available_family_types with categoryList ['OST_Ceilings'] to discover av
               })
               .optional()
               .describe("Bulkhead (dropped ceiling) configuration"),
+            sessionTag: z
+              .string()
+              .optional()
+              .describe("Optional session identifier. Stored as shared parameter DatumSessionTag on the created element. Used for bulk rollback via delete_elements."),
           })
         )
         .min(1)

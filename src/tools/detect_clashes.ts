@@ -20,14 +20,14 @@ export function registerDetectClashesTool(server: McpServer) {
         .array(z.number())
         .optional()
         .describe("Second set of elements to check against (for SelectedElements scope)"),
-      category1: z
-        .string()
-        .optional()
-        .describe("First category (e.g., 'OST_StructuralFraming') for CategoryVsCategory"),
-      category2: z
-        .string()
-        .optional()
-        .describe("Second category (e.g., 'OST_DuctCurves') for CategoryVsCategory"),
+       category1: z
+         .string()
+         .optional()
+         .describe("First category for CategoryVsCategory (e.g., 'OST_StructuralFraming', 'OST_Walls', 'OST_DuctCurves', 'OST_Pipes')"),
+       category2: z
+         .string()
+         .optional()
+         .describe("Second category for CategoryVsCategory (e.g., 'OST_DuctCurves', 'OST_Pipes', 'OST_Conduit'). Checks all elements of category1 against category2."),
       discipline1: z
         .enum(["Architectural", "Structural", "Mechanical", "Electrical", "Plumbing"])
         .optional()
@@ -36,11 +36,13 @@ export function registerDetectClashesTool(server: McpServer) {
         .enum(["Architectural", "Structural", "Mechanical", "Electrical", "Plumbing"])
         .optional()
         .describe("Second discipline for DisciplineVsDiscipline"),
-      tolerance: z
-        .number()
-        .optional()
-        .default(1)
-        .describe("Clash tolerance in mm. Elements closer than this are considered clashing. Default 1mm."),
+       tolerance: z
+         .number()
+         .min(0.1)
+         .max(1000)
+         .optional()
+         .default(1)
+         .describe("Clash tolerance in mm (0.1-1000). Elements closer than this distance are considered clashing. Default 1mm for typical construction tolerance."),
       severityThreshold: z
         .enum(["All", "Minor", "Major", "Critical"])
         .optional()
@@ -58,11 +60,14 @@ export function registerDetectClashesTool(server: McpServer) {
         .optional()
         .default(true)
         .describe("If true, calculates the overlap volume for each clash"),
-      limit: z
-        .number()
-        .optional()
-        .default(100)
-        .describe("Maximum number of clashes to return"),
+       limit: z
+         .number()
+         .int()
+         .min(1)
+         .max(10000)
+         .optional()
+         .default(100)
+         .describe("Maximum number of clashes to return (1-10000, default 100. Increase for comprehensive clash reports on large models)."),
     },
     async (args) => {
       try {

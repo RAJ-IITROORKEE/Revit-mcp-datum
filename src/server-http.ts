@@ -24,9 +24,12 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { registerTools } from "./tools/register.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT || process.env.MCP_PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.MCP_HOST || "0.0.0.0";
 const API_KEY = (process.env.MCP_API_KEY || "").trim();
+const SERVER_TIMEOUT_MS = 300000;
+const SERVER_KEEPALIVE_TIMEOUT_MS = 305000;
+const SERVER_HEADERS_TIMEOUT_MS = 310000;
 
 // ─── Session Store ───────────────────────────────────────────────────────────
 interface Session {
@@ -71,6 +74,20 @@ async function createMcpServer(): Promise<McpServer> {
   );
   await registerTools(server);
   return server;
+}
+
+let cachedToolCount: number | null = null;
+
+async function getToolCount(): Promise<number> {
+  if (cachedToolCount !== null) return cachedToolCount;
+  try {
+    const server = await createMcpServer();
+    const toolRegistry = (server as any)._registeredTools || {};
+    cachedToolCount = Object.keys(toolRegistry).length;
+  } catch {
+    cachedToolCount = 0;
+  }
+  return cachedToolCount;
 }
 
 async function handleStatelessRequest(req: Request, res: Response): Promise<void> {
@@ -162,10 +179,13 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 }
 
 // ─── Health Check (no auth) ──────────────────────────────────────────────────
-app.get("/health", (_req: Request, res: Response) => {
+app.get("/health", async (_req: Request, res: Response) => {
+  const toolCount = await getToolCount();
   res.json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
+    ok: true,
+    uptime: process.uptime(),
+    toolCount,
+    version: process.env.npm_package_version || "1.0.0",
     service: "revit-mcp",
     sessions: sessions.size,
   });
@@ -316,6 +336,10 @@ const httpServer = app.listen(PORT, HOST, () => {
   console.log(`  Auth:   ${API_KEY ? "ENABLED (API key required)" : "DISABLED (no API key set)"}`);
   console.log("═══════════════════════════════════════════════════════════");
 });
+
+httpServer.timeout = SERVER_TIMEOUT_MS;
+httpServer.keepAliveTimeout = SERVER_KEEPALIVE_TIMEOUT_MS;
+httpServer.headersTimeout = SERVER_HEADERS_TIMEOUT_MS;
 
 httpServer.on("error", (err: Error) => {
   console.error(`[BOOT] Server listen error:`, err);

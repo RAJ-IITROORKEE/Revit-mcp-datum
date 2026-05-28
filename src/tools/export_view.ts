@@ -30,28 +30,37 @@ export function registerExportViewTool(server: McpServer) {
       imageSettings: z
         .object({
           resolution: z
-            .number()
-            .optional()
-            .default(300)
-            .describe("Image resolution in DPI (72, 150, 300, 600)"),
-          pixelWidth: z
-            .number()
-            .optional()
-            .describe("Image width in pixels (alternative to DPI-based sizing)"),
-          pixelHeight: z
-            .number()
-            .optional()
-            .describe("Image height in pixels"),
+             .enum(["72", "150", "300", "600"])
+             .optional()
+             .default("300")
+             .describe("Image resolution in DPI (standard values: 72 screen, 150 draft, 300 print, 600 high quality)"),
+           pixelWidth: z
+             .number()
+             .int()
+             .min(100)
+             .max(16000)
+             .optional()
+             .describe("Image width in pixels (100-16000, alternative to resolution-based sizing)"),
+           pixelHeight: z
+             .number()
+             .int()
+             .min(100)
+             .max(16000)
+             .optional()
+             .describe("Image height in pixels (100-16000)"),
           fitToPage: z
             .boolean()
             .optional()
             .default(true)
             .describe("Whether to fit the view contents to the image dimensions"),
-          quality: z
-            .number()
-            .optional()
-            .default(85)
-            .describe("JPEG quality (1-100, only for JPEG format)"),
+           quality: z
+             .number()
+             .int()
+             .min(1)
+             .max(100)
+             .optional()
+             .default(85)
+             .describe("JPEG quality (1-100, only for JPEG format. 85 recommended for good quality/size tradeoff)"),
         })
         .optional()
         .describe("Settings for image exports (PNG, JPEG, BMP, TIFF)"),
@@ -101,11 +110,11 @@ export function registerExportViewTool(server: McpServer) {
             .optional()
             .default("Color")
             .describe("Color mode for PDF"),
-          rasterQuality: z
-            .number()
-            .optional()
-            .default(300)
-            .describe("Raster quality in DPI for rasterized elements"),
+           rasterQuality: z
+             .enum(["72", "150", "300", "600"])
+             .optional()
+             .default("300")
+             .describe("Raster quality in DPI for rasterized elements within PDF (72 draft, 150 screen, 300 print, 600 high)"),
           combineIntoSingle: z
             .boolean()
             .optional()

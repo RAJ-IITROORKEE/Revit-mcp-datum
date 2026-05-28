@@ -51,10 +51,12 @@ Use get_rooms_list or get_element_spatial_data to get room boundaries and dimens
               .enum(["north", "south", "east", "west", "nearest"])
               .optional()
               .describe("Which wall to place against when using 'wall_relative' placement"),
-            wallOffsetMm: z
-              .number()
-              .default(0)
-              .describe("Distance from the wall in mm when using 'wall_relative' placement"),
+             wallOffsetMm: z
+               .number()
+               .min(0)
+               .optional()
+               .default(0)
+               .describe("Distance from the wall in mm when using 'wall_relative' placement (>= 0, default 0 means against wall)"),
             positionAlongWall: z
               .number()
               .min(0)
@@ -67,14 +69,18 @@ Use get_rooms_list or get_element_spatial_data to get room boundaries and dimens
               .max(3)
               .optional()
               .describe("Which corner (0-3, clockwise from top-left) for 'corner' placement"),
-            cornerOffsetMm: z
-              .number()
-              .default(300)
-              .describe("Offset from corner in mm for 'corner' placement"),
-            rotation: z
-              .number()
-              .optional()
-              .describe("Rotation angle in degrees (0-360). If omitted, auto-calculated based on wall/room orientation."),
+             cornerOffsetMm: z
+               .number()
+               .min(0)
+               .optional()
+               .default(300)
+               .describe("Offset from corner in mm for 'corner' placement (>= 0, default 300mm)"),
+             rotation: z
+               .number()
+               .min(0)
+               .max(360)
+               .optional()
+               .describe("Rotation angle in degrees (0-360). If omitted, auto-calculated based on faceDirection and wall/room orientation."),
             faceDirection: z
               .enum(["wall", "center", "door", "window", "custom"])
               .default("wall")
@@ -83,10 +89,12 @@ Use get_rooms_list or get_element_spatial_data to get room boundaries and dimens
               .boolean()
               .default(true)
               .describe("Verify minimum clearance around the furniture piece"),
-            minClearanceMm: z
-              .number()
-              .default(600)
-              .describe("Minimum clearance required around this furniture piece in mm"),
+             minClearanceMm: z
+               .number()
+               .min(0)
+               .optional()
+               .default(600)
+               .describe("Minimum clearance required around this furniture piece in mm (>= 0, default 600mm for comfortable access)"),
           })
         )
         .min(1)

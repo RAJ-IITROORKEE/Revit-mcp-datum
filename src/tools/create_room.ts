@@ -28,6 +28,10 @@ export function registerCreateRoomTool(server: McpServer) {
         .number()
         .optional()
         .describe("ElementId of the phase for the room. Uses current project phase if not specified."),
+      sessionTag: z
+        .string()
+        .optional()
+        .describe("Optional session identifier. Stored as shared parameter DatumSessionTag on the created element. Used for bulk rollback via delete_elements."),
     },
     async (args, extra) => {
       const params = args;

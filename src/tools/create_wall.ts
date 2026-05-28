@@ -19,15 +19,15 @@ export function registerCreateWallTool(server: McpServer) {
             locationLine: z
               .object({
                 startPoint: z.object({
-                  x: z.number().describe("X coordinate of wall start in mm"),
-                  y: z.number().describe("Y coordinate of wall start in mm"),
-                  z: z.number().optional().default(0).describe("Z coordinate in mm"),
-                }),
-                endPoint: z.object({
-                  x: z.number().describe("X coordinate of wall end in mm"),
-                  y: z.number().describe("Y coordinate of wall end in mm"),
-                  z: z.number().optional().default(0).describe("Z coordinate in mm"),
-                }),
+                   x: z.number().describe("X coordinate of wall start in mm (0=project origin, positive=east)"),
+                   y: z.number().describe("Y coordinate of wall start in mm (0=project origin, positive=north)"),
+                   z: z.number().optional().default(0).describe("Z coordinate in mm (elevation, positive=up)"),
+                 }),
+                 endPoint: z.object({
+                   x: z.number().describe("X coordinate of wall end in mm (0=project origin, positive=east)"),
+                   y: z.number().describe("Y coordinate of wall end in mm (0=project origin, positive=north)"),
+                   z: z.number().optional().default(0).describe("Z coordinate in mm (elevation, positive=up)"),
+                 }),
               })
               .describe("Line defining the wall location"),
             baseLevelId: z
@@ -89,6 +89,10 @@ export function registerCreateWallTool(server: McpServer) {
               })
               .optional()
               .describe("Configuration for embedding this wall into another wall (e.g., parapet embedded in exterior wall)"),
+            sessionTag: z
+              .string()
+              .optional()
+              .describe("Optional session identifier. Stored as shared parameter DatumSessionTag on the created element. Used for bulk rollback via delete_elements."),
           })
         )
         .min(1)

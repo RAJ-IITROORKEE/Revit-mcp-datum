@@ -26,12 +26,19 @@ import {
   getPairingTokens,
   relayTokenStorage,
 } from "./relay/index.js";
+import logger, { logToolCall, logWebSocketEvent, logServerStartup, logHealthCheck, logError } from "./utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
-const HOST = process.env.HOST || "0.0.0.0";
+const HOST = process.env.HOST || process.env.MCP_HOST || "0.0.0.0";
 const API_KEY = (process.env.MCP_API_KEY || "").trim();
+const NODE_ENV = process.env.NODE_ENV || "development";
+
+// Railway server timeouts (5 minutes + grace periods)
+const SERVER_TIMEOUT_MS = 300000; // 5 minutes
+const SERVER_KEEPALIVE_TIMEOUT_MS = 305000; // 5m5s
+const SERVER_HEADERS_TIMEOUT_MS = 310000; // 5m10s
 
 // ─── MCP Session Store ───────────────────────────────────────────────────────
 
@@ -44,7 +51,7 @@ interface Session {
 const sessions: Map<string, Session> = new Map();
 
 function getRelayWebSocketUrl(req: Request): string {
-  const host = req.headers.host || `localhost:${PORT}`;
+  const host = req.headers.host || `${HOST}:${PORT}`;
   const forwardedProto = req.headers["x-forwarded-proto"];
   const proto = typeof forwardedProto === "string" ? forwardedProto : req.secure ? "https" : "http";
   const wsProto = proto === "https" ? "wss" : "ws";
@@ -166,15 +173,44 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 // ─── Health & Status Endpoints ───────────────────────────────────────────────
 
-app.get("/health", (_req: Request, res: Response) => {
-  res.json({
-    status: "healthy",
+// Lazy-loaded tool count (computed once at first request)
+let cachedToolCount: number | null = null;
+
+async function getToolCount(): Promise<number> {
+  if (cachedToolCount !== null) return cachedToolCount;
+  try {
+    const server = await createMcpServer();
+    const toolRegistry = (server as any)._registeredTools || {};
+    cachedToolCount = Object.keys(toolRegistry).length;
+  } catch (error) {
+    console.error("[Health] Error computing tool count:", error);
+    cachedToolCount = 0;
+  }
+  return cachedToolCount;
+}
+
+app.get("/health", async (_req: Request, res: Response) => {
+  const toolCount = await getToolCount();
+  const healthData = {
+    ok: true,
+    uptime: process.uptime(),
+    connectedClients: getConnectedClients().length,
+    toolCount: toolCount,
+    version: process.env.npm_package_version || "1.0.0",
+    environment: NODE_ENV,
     timestamp: new Date().toISOString(),
     service: "revit-mcp-combined",
     mcpSessions: sessions.size,
     relayClients: getConnectedClients().length,
     pairingTokens: getPairingTokens().length,
+  };
+  logHealthCheck({
+    ok: healthData.ok,
+    connectedClients: healthData.connectedClients,
+    toolCount: healthData.toolCount,
+    uptime: healthData.uptime,
   });
+  res.json(healthData);
 });
 
 app.get("/status", authMiddleware, (_req: Request, res: Response) => {
@@ -258,6 +294,17 @@ app.post("/api/relay/validate-and-register", async (req: Request, res: Response)
 // ─── MCP Endpoints ───────────────────────────────────────────────────────────
 
 app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  // Extract userId from Authorization header if available (outside try for catch block scope)
+  const authHeader = req.headers.authorization || "";
+  const userId = authHeader.startsWith("Bearer ") ? "authorized_user" : "anonymous";
+
+  // Extract tool name from request body for logging (outside try for catch block scope)
+  const toolName = typeof req.body?.method === "string" 
+    ? req.body.method.replace(/^tools\//i, "")
+    : "unknown";
+  
   try {
     // Extract relay token from header — Datum sends this to identify the user's Revit session.
     const relayTokenHeader = req.headers["x-relay-token"];
@@ -275,6 +322,14 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
           error: { code: -32001, message: "Invalid or expired relay token" },
           id: req.body?.id ?? null,
         });
+        logToolCall({
+          toolName,
+          userId,
+          durationMs: Date.now() - startTime,
+          success: false,
+          transport: "relay",
+          error: "Invalid or expired relay token",
+        });
         return;
       }
     }
@@ -285,10 +340,20 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
       const sessionId = getSessionId(req);
 
       if (sessionId && sessions.has(sessionId)) {
-        const session = sessions.get(sessionId)!;
-        await session.transport.handleRequest(req, res, req.body);
-        return;
-      }
+         const session = sessions.get(sessionId)!;
+         await session.transport.handleRequest(req, res, req.body);
+         // Log successful tool execution
+         if (toolName !== "unknown") {
+           logToolCall({
+             toolName,
+             userId,
+             durationMs: Date.now() - startTime,
+             success: true,
+             transport: relayToken ? "relay" : "direct",
+           });
+         }
+         return;
+       }
 
       if (!sessionId && isInitializeRequest(req.body)) {
         console.log("[MCP] New session initialization request");
@@ -314,13 +379,23 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
           }
         };
 
-        await transport.handleRequest(req, res, req.body);
+         await transport.handleRequest(req, res, req.body);
 
-        const initializedSessionId = transport.sessionId;
-        if (initializedSessionId && !sessions.has(initializedSessionId)) {
-          sessions.set(initializedSessionId, { transport, server, createdAt: new Date() });
-        }
-        return;
+         const initializedSessionId = transport.sessionId;
+         if (initializedSessionId && !sessions.has(initializedSessionId)) {
+           sessions.set(initializedSessionId, { transport, server, createdAt: new Date() });
+         }
+         // Log tool execution
+         if (toolName !== "unknown" && toolName !== "initialize") {
+           logToolCall({
+             toolName,
+             userId,
+             durationMs: Date.now() - startTime,
+             success: true,
+             transport: relayToken ? "relay" : "direct",
+           });
+         }
+         return;
       }
 
       // No matching session — Railway may have restarted. Return a clean JSON-RPC error
@@ -339,6 +414,15 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("[MCP] Error handling POST /mcp:", error);
+    logError({
+      context: "POST /mcp",
+      error: error instanceof Error ? error : new Error(String(error)),
+      userId,
+      details: {
+        toolName,
+        durationMs: Date.now() - startTime,
+      },
+    });
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: "2.0",
@@ -394,13 +478,19 @@ async function start() {
   // Create HTTP server from Express app
   const httpServer = createServer(app);
 
+  // ─── Railway Production Timeouts ──────────────────────────────────────────
+  // These settings prevent "Cannot set headers after they are sent" and socket hang-ups
+  httpServer.timeout = SERVER_TIMEOUT_MS;
+  httpServer.keepAliveTimeout = SERVER_KEEPALIVE_TIMEOUT_MS;
+  httpServer.headersTimeout = SERVER_HEADERS_TIMEOUT_MS;
+
   // Attach WebSocket relay to the same server at /relay path
   attachRelayToServer(httpServer);
 
   // Start listening
   httpServer.listen(PORT, HOST, () => {
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("  Revit MCP Combined Server (Single Port)");
+    console.log("  Revit MCP Combined Server (Single Port - Railway Ready)");
     console.log("═══════════════════════════════════════════════════════════");
     console.log(`  HTTP:        http://${HOST}:${PORT}`);
     console.log(`  MCP:         http://${HOST}:${PORT}/mcp`);
@@ -408,6 +498,8 @@ async function start() {
     console.log(`  Health:      http://${HOST}:${PORT}/health`);
     console.log(`  New Token:   POST http://${HOST}:${PORT}/api/relay/token`);
     console.log(`  Auth:        ${API_KEY ? "ENABLED" : "DISABLED"}`);
+    console.log(`  Env:         ${NODE_ENV}`);
+    console.log(`  Timeout:     ${SERVER_TIMEOUT_MS}ms`);
     console.log("═══════════════════════════════════════════════════════════");
   });
 

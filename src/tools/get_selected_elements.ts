@@ -8,9 +8,13 @@ export function registerGetSelectedElementsTool(server: McpServer) {
     "Get elements currently selected in Revit. You can limit the number of returned elements.",
     {
       limit: z
-        .number()
-        .optional()
-        .describe("Maximum number of elements to return"),
+         .number()
+         .int()
+         .min(1)
+         .max(10000)
+         .optional()
+         .default(100)
+         .describe("Maximum number of selected elements to return (1-10000, default 100)"),
     },
     async (args, extra) => {
       const params = {

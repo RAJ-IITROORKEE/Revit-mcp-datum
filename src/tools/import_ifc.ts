@@ -22,15 +22,15 @@ export function registerImportIfcTool(server: McpServer) {
         .describe(
           "How to position the imported IFC: 'AutoCenterToCenter' = align centers, 'AutoOriginToOrigin' = align origins, 'SharedCoordinates' = use IFC site location (recommended for coordination), 'Manual' = specify position."
         ),
-      manualPosition: z
-        .object({
-          x: z.number().describe("X offset in mm"),
-          y: z.number().describe("Y offset in mm"),
-          z: z.number().describe("Z offset in mm"),
-          rotation: z.number().optional().describe("Rotation angle in degrees"),
-        })
-        .optional()
-        .describe("Manual position offset (for Manual positioning mode)"),
+       manualPosition: z
+         .object({
+           x: z.number().describe("X offset in mm (0=project origin east-west)"),
+           y: z.number().describe("Y offset in mm (0=project origin north-south)"),
+           z: z.number().describe("Z offset in mm (elevation, positive=up)"),
+           rotation: z.number().min(0).max(360).optional().describe("Rotation angle in degrees (0-360)"),
+         })
+         .optional()
+         .describe("Manual position offset. Only used when positioning='Manual'."),
       importOptions: z
         .object({
           convertUnits: z

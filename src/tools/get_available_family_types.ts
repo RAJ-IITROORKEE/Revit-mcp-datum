@@ -8,19 +8,44 @@ export function registerGetAvailableFamilyTypesTool(server: McpServer) {
     "Get available family types in the current Revit project. You can filter by category and family name, and limit the number of returned types.",
     {
       categoryList: z
-        .array(z.string())
+        .array(
+          z.enum([
+            "OST_Walls",
+            "OST_Doors",
+            "OST_Windows",
+            "OST_Furniture",
+            "OST_Floors",
+            "OST_Roofs",
+            "OST_Ceilings",
+            "OST_Stairs",
+            "OST_Railings",
+            "OST_Columns",
+            "OST_Beams",
+            "OST_Braces",
+            "OST_Ducts",
+            "OST_Pipes",
+            "OST_Electrical",
+            "OST_Equipment",
+            "OST_Ramps",
+            "OST_StructuralFraming",
+          ])
+        )
         .optional()
         .describe(
-          "List of Revit category names to filter by (e.g., 'OST_Walls', 'OST_Doors', 'OST_Furniture')"
+          "List of Revit category names to filter by. Examples: OST_Walls, OST_Doors, OST_Windows, OST_Furniture, OST_Floors, OST_Roofs, OST_Ceilings, OST_Stairs, OST_Railings, OST_Columns, OST_Beams, OST_Braces, OST_Ducts, OST_Pipes, OST_Electrical, OST_Equipment, OST_Ramps, OST_StructuralFraming"
         ),
       familyNameFilter: z
         .string()
         .optional()
-        .describe("Filter family types by family name (partial match)"),
+        .describe("Filter family types by family name (partial match, case-insensitive)"),
       limit: z
         .number()
+        .int()
+        .min(1)
+        .max(1000)
         .optional()
-        .describe("Maximum number of family types to return"),
+        .default(100)
+        .describe("Maximum number of family types to return (1-1000, default 100)"),
     },
     async (args, extra) => {
       const params = {

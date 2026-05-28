@@ -77,6 +77,10 @@ export function registerPlaceComponentTool(server: McpServer) {
               .describe(
                 "Override instance parameter values after placement (e.g., set dimensions, marks, comments)."
               ),
+            sessionTag: z
+              .string()
+              .optional()
+              .describe("Optional session identifier. Stored as shared parameter DatumSessionTag on the created element. Used for bulk rollback via delete_elements."),
           })
         )
         .min(1)

@@ -8,8 +8,9 @@ export function registerDeleteElementTool(server: McpServer) {
     "Delete one or more elements from the Revit model by their element IDs.",
     {
       elementIds: z
-        .array(z.string())
-        .describe("The IDs of the elements to delete"),
+        .array(z.number())
+        .min(1)
+        .describe("Array of ElementIds (numeric) to delete. Must contain at least one ID. Invalid or already-deleted IDs are silently skipped."),
     },
     async (args, extra) => {
       const params = {

@@ -33,6 +33,7 @@ import {
   generatePairingToken,
   isValidPairingToken,
 } from "./types.js";
+import { logWebSocketEvent, logError } from "../utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -250,7 +251,16 @@ function validateToken(token: string): boolean {
 
 function handleConnection(ws: WebSocket, req: IncomingMessage) {
   const clientId = `client_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  console.log(`[Relay] New connection: ${clientId} from ${req.socket.remoteAddress}`);
+  const remoteAddress = req.socket.remoteAddress || "unknown";
+  console.log(`[Relay] New connection: ${clientId} from ${remoteAddress}`);
+  
+  // Log WebSocket connection
+  logWebSocketEvent({
+    event: "connect",
+    clientId,
+    address: remoteAddress,
+    timestamp: new Date().toISOString(),
+  });
 
   // Temporary client info until registration
   let registeredClient: ConnectedClient | null = null;
@@ -263,12 +273,23 @@ function handleConnection(ws: WebSocket, req: IncomingMessage) {
       });
     } catch (error) {
       console.error(`[Relay] Invalid message from ${clientId}:`, error);
+      logError({
+        context: "Relay WebSocket message parsing",
+        error: error instanceof Error ? error : new Error(String(error)),
+        clientId,
+      });
       sendError(ws, "unknown", RelayErrorCodes.INVALID_MESSAGE, "Invalid JSON message");
     }
   });
 
   ws.on("close", (code, reason) => {
     console.log(`[Relay] Connection closed: ${clientId} (code=${code}, reason=${reason})`);
+    logWebSocketEvent({
+      event: "disconnect",
+      clientId,
+      reason: String(reason || `code ${code}`),
+      timestamp: new Date().toISOString(),
+    });
     if (registeredClient) {
       handleDisconnect(registeredClient);
     }
@@ -276,6 +297,12 @@ function handleConnection(ws: WebSocket, req: IncomingMessage) {
 
   ws.on("error", (error) => {
     console.error(`[Relay] WebSocket error for ${clientId}:`, error);
+    logWebSocketEvent({
+      event: "error",
+      clientId,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+    });
   });
 
   ws.on("pong", () => {

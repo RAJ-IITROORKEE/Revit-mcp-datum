@@ -26,7 +26,7 @@ function getConnectionMode(): ConnectionMode {
  */
 function getDirectConnectionSettings(): { host: string; port: number } {
   return {
-    host: process.env.REVIT_HOST || "localhost",
+    host: process.env.REVIT_HOST || "127.0.0.1",
     port: parseInt(process.env.REVIT_PORT || "8080", 10),
   };
 }

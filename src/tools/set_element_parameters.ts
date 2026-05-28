@@ -19,9 +19,9 @@ export function registerSetElementParametersTool(server: McpServer) {
                   parameterName: z
                     .string()
                     .describe("Name of the parameter to set (as returned by get_element_parameters)"),
-                  value: z
-                    .union([z.string(), z.number(), z.boolean()])
-                    .describe("Value to set. String for text/ElementId params, number for numeric, boolean for yes/no."),
+                   value: z
+                     .union([z.string(), z.number(), z.boolean()])
+                     .describe("Value to set. Type depends on parameter: string for text/ElementId/length-type params, number for numeric dimensions (in project units), boolean for Yes/No type parameters."),
                   isTypeParameter: z
                     .boolean()
                     .optional()

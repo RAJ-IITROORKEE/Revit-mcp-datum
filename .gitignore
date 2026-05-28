@@ -1,6 +1,8 @@
 build/
 node_modules/
 revit-data.db
+.env
+.env.local
 
 # Deployment files (kept separate from main repo)
 deployment/

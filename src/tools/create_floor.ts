@@ -113,6 +113,10 @@ export function registerCreateFloorTool(server: McpServer) {
               .number()
               .optional()
               .describe("Span direction angle in degrees (0-360) for structural floors. Defines the direction of structural span."),
+            sessionTag: z
+              .string()
+              .optional()
+              .describe("Optional session identifier. Stored as shared parameter DatumSessionTag on the created element. Used for bulk rollback via delete_elements."),
           })
         )
         .min(1)
