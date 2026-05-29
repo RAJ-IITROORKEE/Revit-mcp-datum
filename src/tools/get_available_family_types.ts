@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerGetAvailableFamilyTypesTool(server: McpServer) {
   server.tool(
@@ -62,25 +63,9 @@ export function registerGetAvailableFamilyTypesTool(server: McpServer) {
           );
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("get_available_family_types", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `get available family types failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("get_available_family_types", error);
       }
     }
   );

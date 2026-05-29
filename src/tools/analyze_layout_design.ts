@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 /**
  * CRITICAL TOOL: Deep AI Design Analysis
@@ -142,25 +143,9 @@ The LLM should use the returned 'issues' array to generate correction code via s
           instruction: "Use the 'issues' array to identify problems. Each issue has elementIds, coordinates, severity (critical/warning/info), and suggestedFix. Generate correction code using send_code_to_revit or use modify tools for each critical/warning issue.",
         };
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("analyze_layout_design", result);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Layout design analysis failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("analyze_layout_design", error);
       }
     }
   );

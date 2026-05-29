@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerGetLevelsListTool(server: McpServer) {
   server.tool(
@@ -24,25 +25,9 @@ export function registerGetLevelsListTool(server: McpServer) {
           return await revitClient.sendCommand("get_levels_list", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("get_levels_list", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Get levels list failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("get_levels_list", error);
       }
     }
   );

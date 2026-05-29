@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerCreateCeilingTool(server: McpServer) {
   server.tool(
@@ -170,25 +171,9 @@ Use get_available_family_types with categoryList ['OST_Ceilings'] to discover av
           return await revitClient.sendCommand("create_ceiling", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("create_ceiling", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create ceiling failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_ceiling", error);
       }
     }
   );

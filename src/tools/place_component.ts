@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerPlaceComponentTool(server: McpServer) {
   server.tool(
@@ -99,25 +100,9 @@ export function registerPlaceComponentTool(server: McpServer) {
           return await revitClient.sendCommand("place_component", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("place_component", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Place component failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("place_component", error);
       }
     }
   );

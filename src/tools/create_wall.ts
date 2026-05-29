@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerCreateWallTool(server: McpServer) {
   server.tool(
@@ -103,9 +104,9 @@ export function registerCreateWallTool(server: McpServer) {
         const response = await withRevitConnection(async (revitClient) => {
           return await revitClient.sendCommand("create_wall", args);
         });
-        return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        return normalizedToolResult("create_wall", response);
       } catch (error) {
-        return { content: [{ type: "text", text: `Create wall failed: ${error instanceof Error ? error.message : String(error)}` }] };
+        return normalizedToolCatch("create_wall", error);
       }
     }
   );

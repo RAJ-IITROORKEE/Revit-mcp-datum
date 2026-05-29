@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
 
 export function registerCreateFloorTool(server: McpServer) {
   server.tool(
@@ -130,25 +131,9 @@ export function registerCreateFloorTool(server: McpServer) {
           return await revitClient.sendCommand("create_floor", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedToolResult("create_floor", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create floor failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_floor", error);
       }
     }
   );
