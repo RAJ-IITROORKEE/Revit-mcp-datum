@@ -50,6 +50,39 @@ interface Session {
 
 const sessions: Map<string, Session> = new Map();
 
+function getRequestedToolName(body: unknown): string {
+  if (!body || typeof body !== "object") return "unknown";
+  const request = body as { method?: unknown; params?: unknown };
+  const method = typeof request.method === "string" ? request.method : "unknown";
+  if (method === "tools/call" && request.params && typeof request.params === "object") {
+    const params = request.params as { name?: unknown };
+    if (typeof params.name === "string" && params.name.trim()) {
+      return params.name.trim();
+    }
+  }
+  return method.replace(/^tools\//i, "");
+}
+
+function summarizeToolArgs(body: unknown): Record<string, unknown> | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const request = body as { method?: unknown; params?: unknown };
+  if (request.method !== "tools/call" || !request.params || typeof request.params !== "object") return undefined;
+
+  const params = request.params as { arguments?: unknown };
+  const args = params.arguments;
+  if (!args || typeof args !== "object") return undefined;
+
+  const record = args as Record<string, unknown>;
+  const summary: Record<string, unknown> = {};
+  if (Array.isArray(record.walls)) summary.wallCount = record.walls.length;
+  if (Array.isArray(record.components)) summary.componentCount = record.components.length;
+  if (Array.isArray(record.elementIds)) summary.elementIdCount = record.elementIds.length;
+  for (const key of ["levelId", "baseLevelId", "category", "categoryList", "familyNameFilter", "limit"]) {
+    if (key in record) summary[key] = record[key];
+  }
+  return Object.keys(summary).length > 0 ? summary : undefined;
+}
+
 function getRelayWebSocketUrl(req: Request): string {
   const host = req.headers.host || `${HOST}:${PORT}`;
   const forwardedProto = req.headers["x-forwarded-proto"];
@@ -300,10 +333,10 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization || "";
   const userId = authHeader.startsWith("Bearer ") ? "authorized_user" : "anonymous";
 
-  // Extract tool name from request body for logging (outside try for catch block scope)
-  const toolName = typeof req.body?.method === "string" 
-    ? req.body.method.replace(/^tools\//i, "")
-    : "unknown";
+  // Extract actual MCP tool name for logging (outside try for catch block scope).
+  // JSON-RPC method is always "tools/call"; the real tool is params.name.
+  const toolName = getRequestedToolName(req.body);
+  const inputSummary = summarizeToolArgs(req.body);
   
   try {
     // Extract relay token from header — Datum sends this to identify the user's Revit session.
@@ -339,6 +372,19 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
     await relayTokenStorage.run(relayToken, async () => {
       const sessionId = getSessionId(req);
 
+      if (toolName !== "unknown") {
+        logger.info(
+          {
+            event: "mcp_request_start",
+            toolName,
+            sessionId: sessionId || null,
+            hasRelayToken: Boolean(relayToken),
+            inputSummary,
+          },
+          `MCP request start: ${toolName}`
+        );
+      }
+
       if (sessionId && sessions.has(sessionId)) {
          const session = sessions.get(sessionId)!;
          await session.transport.handleRequest(req, res, req.body);
@@ -347,10 +393,11 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
            logToolCall({
              toolName,
              userId,
-             durationMs: Date.now() - startTime,
-             success: true,
-             transport: relayToken ? "relay" : "direct",
-           });
+            durationMs: Date.now() - startTime,
+            success: true,
+            transport: relayToken ? "relay" : "direct",
+            inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
+          });
          }
          return;
        }
@@ -390,10 +437,11 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
            logToolCall({
              toolName,
              userId,
-             durationMs: Date.now() - startTime,
-             success: true,
-             transport: relayToken ? "relay" : "direct",
-           });
+              durationMs: Date.now() - startTime,
+              success: true,
+              transport: relayToken ? "relay" : "direct",
+              inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
+            });
          }
          return;
       }

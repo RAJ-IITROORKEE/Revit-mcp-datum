@@ -660,9 +660,15 @@ export async function sendCommandViaToken(
     directPending.set(messageId, { resolve, reject, timeout });
 
     const payload: CommandPayload = { command, params, timeout: timeoutMs };
-    send(revitClient.ws, createMessage("command", payload, messageId));
+    const commandMessage = createMessage("command", payload, messageId);
+    revitClient.ws.send(JSON.stringify(commandMessage), (error) => {
+      if (!error) return;
+      clearTimeout(timeout);
+      directPending.delete(messageId);
+      reject(error);
+    });
 
-    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${revitClient.id} (msgId=${messageId})`);
+    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${revitClient.id} (msgId=${messageId}, timeoutMs=${timeoutMs})`);
   });
 }
 

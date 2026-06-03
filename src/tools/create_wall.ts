@@ -2,6 +2,17 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
 import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
+import logger from "../utils/Logger.js";
+
+function summarizeCreateWallArgs(args: { walls?: unknown[] }) {
+  const walls = Array.isArray(args.walls) ? args.walls : [];
+  const firstWall = walls[0] && typeof walls[0] === "object" ? (walls[0] as Record<string, unknown>) : undefined;
+  return {
+    wallCount: walls.length,
+    firstBaseLevelId: firstWall?.baseLevelId,
+    firstHasLocationLine: Boolean(firstWall?.locationLine),
+  };
+}
 
 export function registerCreateWallTool(server: McpServer) {
   server.tool(
@@ -101,11 +112,24 @@ export function registerCreateWallTool(server: McpServer) {
     },
     async (args) => {
       try {
+        const inputSummary = summarizeCreateWallArgs(args);
+        logger.info({ event: "create_wall_dispatch_start", ...inputSummary }, "create_wall dispatching to Revit");
+
         const response = await withRevitConnection(async (revitClient) => {
           return await revitClient.sendCommand("create_wall", args);
         });
+
+        logger.info({ event: "create_wall_dispatch_success", ...inputSummary }, "create_wall returned from Revit");
         return normalizedToolResult("create_wall", response);
       } catch (error) {
+        logger.error(
+          {
+            event: "create_wall_dispatch_error",
+            error: error instanceof Error ? error.message : String(error),
+            ...summarizeCreateWallArgs(args),
+          },
+          "create_wall failed while waiting for Revit"
+        );
         return normalizedToolCatch("create_wall", error);
       }
     }
