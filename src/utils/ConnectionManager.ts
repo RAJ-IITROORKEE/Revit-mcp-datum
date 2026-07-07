@@ -167,8 +167,8 @@ async function withRelayConnection<T>(
 
   if (!token) {
     throw new Error(
-      "No relay token in async context. " +
-      "Ensure X-Relay-Token header is set and the /mcp handler wraps requests in relayTokenStorage.run()."
+      "No relay credential in async context. " +
+      "Ensure X-Relay-Session or X-Relay-Token header is set and the /mcp handler wraps requests in relayTokenStorage.run()."
     );
   }
 

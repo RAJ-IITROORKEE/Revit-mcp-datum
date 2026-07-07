@@ -14,6 +14,7 @@ export type ClientType = "mcp-server" | "revit-plugin";
 export interface ClientInfo {
   id: string;
   type: ClientType;
+  /** Route key used by the relay. Legacy tokens use the token value; signed sessions use connection:<id>. */
   pairingToken: string;
   connectedAt: Date;
   lastPing: Date;
@@ -48,7 +49,11 @@ export interface RelayMessage {
 
 export interface RegisterPayload {
   clientType: ClientType;
-  pairingToken: string;
+  /** Legacy 8-character pairing token. Kept temporarily for current plugin compatibility. */
+  pairingToken?: string;
+  /** Signed connection-scoped relay session for the production plugin path. */
+  relaySession?: string;
+  connectionId?: string;
   metadata?: ClientInfo["metadata"];
 }
 

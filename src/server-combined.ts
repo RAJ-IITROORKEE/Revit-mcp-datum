@@ -25,6 +25,9 @@ import {
   getConnectedClients, 
   getPairingTokens,
   relayTokenStorage,
+  createRelaySession,
+  verifyRelaySession,
+  type RelaySessionPayload,
 } from "./relay/index.js";
 import logger, { logToolCall, logWebSocketEvent, logServerStartup, logHealthCheck, logError } from "./utils/Logger.js";
 
@@ -34,6 +37,7 @@ const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || process.env.MCP_HOST || "0.0.0.0";
 const API_KEY = (process.env.MCP_API_KEY || "").trim();
 const NODE_ENV = process.env.NODE_ENV || "development";
+const ALLOW_UNAUTHENTICATED_MCP = process.env.ALLOW_UNAUTHENTICATED_MCP === "true";
 
 // Railway server timeouts (5 minutes + grace periods)
 const SERVER_TIMEOUT_MS = 300000; // 5 minutes
@@ -105,6 +109,45 @@ function getSessionId(req: Request): string | undefined {
   return undefined;
 }
 
+function getHeaderValue(req: Request, name: string): string {
+  const value = req.headers[name.toLowerCase()];
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0].trim();
+  return "";
+}
+
+function getRelayRouteFromHeaders(req: Request):
+  | { routeKey: string; credentialType: "session" | "legacy-token" }
+  | { error: string } {
+  const relaySession = getHeaderValue(req, "x-relay-session");
+  if (relaySession) {
+    const verification = verifyRelaySession(relaySession);
+    if (!verification.valid) return { error: verification.error };
+    return { routeKey: verification.session.routeKey, credentialType: "session" };
+  }
+
+  const relayToken = getHeaderValue(req, "x-relay-token");
+  if (!relayToken) return { routeKey: "", credentialType: "legacy-token" };
+
+  const tokenInfo = getTokenInfo(relayToken);
+  if (!tokenInfo) return { error: "Invalid or expired relay token" };
+  return { routeKey: relayToken, credentialType: "legacy-token" };
+}
+
+function readOptionalString(value: unknown, maxLength = 128): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : undefined;
+}
+
+function readStringArray(value: unknown, maxItems = 20): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim().slice(0, 64))
+    .slice(0, maxItems);
+}
+
 // ─── MCP Server Factory ─────────────────────────────────────────────────────
 
 async function createMcpServer(): Promise<McpServer> {
@@ -169,7 +212,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-API-Key, Mcp-Session-Id"
+    "Content-Type, Authorization, X-API-Key, Mcp-Session-Id, X-Relay-Token, X-Relay-Session"
   );
   res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
   next();
@@ -182,7 +225,12 @@ app.options("/{*path}", (_req: Request, res: Response) => {
 // Auth Middleware
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   if (!API_KEY) {
-    next();
+    if (NODE_ENV === "development" || NODE_ENV === "test" || ALLOW_UNAUTHENTICATED_MCP) {
+      next();
+      return;
+    }
+
+    res.status(503).json({ error: "MCP_API_KEY is required" });
     return;
   }
 
@@ -254,7 +302,7 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
     mcpSessions: sessions.size,
     relayClients: getConnectedClients(),
     pairingTokens: getPairingTokens().map(t => ({
-      token: t.token,
+      tokenPreview: `${t.token.slice(0, 4)}...`,
       expiresAt: t.expiresAt,
       hasRevit: !!t.revitClientId,
       hasMcp: !!t.mcpClientId,
@@ -276,6 +324,44 @@ app.post("/api/relay/token", authMiddleware, async (req: Request, res: Response)
     expiresAt: token.expiresAt.toISOString(),
     websocketUrl,
   });
+});
+
+app.post("/api/relay/session", authMiddleware, async (req: Request, res: Response) => {
+  const body = req.body as Record<string, unknown> | undefined;
+  const connectionId = readOptionalString(body?.connectionId);
+
+  if (!connectionId) {
+    res.status(400).json({ error: "connectionId is required" });
+    return;
+  }
+
+  const requestedTtlSeconds = typeof body?.ttlSeconds === "number" && Number.isFinite(body.ttlSeconds)
+    ? body.ttlSeconds
+    : 12 * 60 * 60;
+  const ttlSeconds = Math.max(60, Math.min(requestedTtlSeconds, 24 * 60 * 60));
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
+  const payload: RelaySessionPayload = {
+    connectionId,
+    clerkUserId: readOptionalString(body?.clerkUserId),
+    deviceId: readOptionalString(body?.deviceId),
+    scopes: readStringArray(body?.scopes),
+    issuedAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+
+  try {
+    const relaySession = createRelaySession(payload);
+    res.json({
+      relaySession,
+      connectionId,
+      expiresAt: expiresAt.toISOString(),
+      websocketUrl: getRelayWebSocketUrl(req),
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unable to create relay session";
+    res.status(500).json({ error: message });
+  }
 });
 
 // Get token info
@@ -302,8 +388,24 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
 // Validate and re-register an existing token (used by Revit plugin after Railway restart).
 // If the server restarted and lost in-memory state, this re-creates the token entry so
 // both Revit and Datum can resume using the same token without user intervention.
-app.post("/api/relay/validate-and-register", async (req: Request, res: Response) => {
-  const { token } = req.body as { token?: string };
+app.post("/api/relay/validate-and-register", authMiddleware, async (req: Request, res: Response) => {
+  const { token, relaySession } = req.body as { token?: string; relaySession?: string };
+  if (typeof relaySession === "string" && relaySession.trim()) {
+    const verification = verifyRelaySession(relaySession);
+    if (!verification.valid) {
+      res.status(400).json({ error: verification.error });
+      return;
+    }
+
+    res.json({
+      connectionId: verification.session.payload.connectionId,
+      expiresAt: verification.session.payload.expiresAt,
+      websocketUrl: getRelayWebSocketUrl(req),
+      reregistered: false,
+    });
+    return;
+  }
+
   if (!token || typeof token !== "string") {
     res.status(400).json({ error: "Missing or invalid token in request body" });
     return;
@@ -339,37 +441,27 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   const inputSummary = summarizeToolArgs(req.body);
   
   try {
-    // Extract relay token from header — Datum sends this to identify the user's Revit session.
-    const relayTokenHeader = req.headers["x-relay-token"];
-    const relayToken = typeof relayTokenHeader === "string"
-      ? relayTokenHeader.trim()
-      : Array.isArray(relayTokenHeader)
-        ? String(relayTokenHeader[0] || "").trim()
-        : "";
-
-    if (relayToken) {
-      const tokenInfo = getTokenInfo(relayToken);
-      if (!tokenInfo) {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: { code: -32001, message: "Invalid or expired relay token" },
-          id: req.body?.id ?? null,
-        });
-        logToolCall({
-          toolName,
-          userId,
-          durationMs: Date.now() - startTime,
-          success: false,
-          transport: "relay",
-          error: "Invalid or expired relay token",
-        });
-        return;
-      }
+    const relayRoute = getRelayRouteFromHeaders(req);
+    if ("error" in relayRoute) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: { code: -32001, message: relayRoute.error },
+        id: req.body?.id ?? null,
+      });
+      logToolCall({
+        toolName,
+        userId,
+        durationMs: Date.now() - startTime,
+        success: false,
+        transport: "relay",
+        error: relayRoute.error,
+      });
+      return;
     }
 
-    // Thread the relay token through the MCP tool execution chain via AsyncLocalStorage.
+    // Thread the relay route key through the MCP tool execution chain via AsyncLocalStorage.
     // ConnectionManager.withRevitConnection() reads it from getRelayToken() — no global state.
-    await relayTokenStorage.run(relayToken, async () => {
+    await relayTokenStorage.run(relayRoute.routeKey, async () => {
       const sessionId = getSessionId(req);
 
       if (toolName !== "unknown") {
@@ -378,7 +470,8 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
             event: "mcp_request_start",
             toolName,
             sessionId: sessionId || null,
-            hasRelayToken: Boolean(relayToken),
+            hasRelayCredential: Boolean(relayRoute.routeKey),
+            relayCredentialType: relayRoute.routeKey ? relayRoute.credentialType : null,
             inputSummary,
           },
           `MCP request start: ${toolName}`
@@ -395,7 +488,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
              userId,
             durationMs: Date.now() - startTime,
             success: true,
-            transport: relayToken ? "relay" : "direct",
+            transport: relayRoute.routeKey ? "relay" : "direct",
             inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
           });
          }
@@ -439,7 +532,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
              userId,
               durationMs: Date.now() - startTime,
               success: true,
-              transport: relayToken ? "relay" : "direct",
+               transport: relayRoute.routeKey ? "relay" : "direct",
               inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
             });
          }
@@ -545,7 +638,7 @@ async function start() {
     console.log(`  Relay WS:    ws://${HOST}:${PORT}/relay`);
     console.log(`  Health:      http://${HOST}:${PORT}/health`);
     console.log(`  New Token:   POST http://${HOST}:${PORT}/api/relay/token`);
-    console.log(`  Auth:        ${API_KEY ? "ENABLED" : "DISABLED"}`);
+    console.log(`  Auth:        ${API_KEY ? "ENABLED" : "DISABLED (development only)"}`);
     console.log(`  Env:         ${NODE_ENV}`);
     console.log(`  Timeout:     ${SERVER_TIMEOUT_MS}ms`);
     console.log("═══════════════════════════════════════════════════════════");

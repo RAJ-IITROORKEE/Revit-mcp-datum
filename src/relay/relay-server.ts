@@ -33,6 +33,7 @@ import {
   generatePairingToken,
   isValidPairingToken,
 } from "./types.js";
+import { verifyRelaySession } from "./relay-session.js";
 import { logWebSocketEvent, logError } from "../utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -247,6 +248,27 @@ function validateToken(token: string): boolean {
   return info !== null;
 }
 
+function resolveRegisterRouteKey(payload: RegisterPayload): { routeKey: string; mode: "session" | "legacy"; error?: never } | { error: string } {
+  const relaySession = typeof payload.relaySession === "string" ? payload.relaySession.trim() : "";
+  if (relaySession) {
+    const verification = verifyRelaySession(relaySession);
+    if (!verification.valid) return { error: verification.error };
+    if (payload.connectionId && payload.connectionId !== verification.session.payload.connectionId) {
+      return { error: "Relay session connectionId mismatch" };
+    }
+    if (!tokenToClients.has(verification.session.routeKey)) {
+      tokenToClients.set(verification.session.routeKey, {});
+    }
+    return { routeKey: verification.session.routeKey, mode: "session" };
+  }
+
+  const pairingToken = typeof payload.pairingToken === "string" ? payload.pairingToken.trim() : "";
+  if (!validateToken(pairingToken)) {
+    return { error: "Invalid or expired pairing token" };
+  }
+  return { routeKey: pairingToken, mode: "legacy" };
+}
+
 // ─── Connection Handling ─────────────────────────────────────────────────────
 
 function handleConnection(ws: WebSocket, req: IncomingMessage) {
@@ -375,16 +397,16 @@ function handleRegister(
   setClient: (client: ConnectedClient) => void
 ) {
   const payload = message.payload as RegisterPayload;
-  
-  // Validate pairing token
-  if (!validateToken(payload.pairingToken)) {
+  const registration = resolveRegisterRouteKey(payload);
+
+  if ("error" in registration) {
     const ackPayload: RegisterAckPayload = {
       success: false,
       clientId: "",
-      message: "Invalid or expired pairing token",
+      message: registration.error,
     };
     send(ws, createMessage("register_ack", ackPayload, message.id));
-    ws.close(4001, "Invalid pairing token");
+    ws.close(4001, registration.error);
     return;
   }
 
@@ -392,7 +414,7 @@ function handleRegister(
   const client: ConnectedClient = {
     id: clientId,
     type: payload.clientType,
-    pairingToken: payload.pairingToken,
+    pairingToken: registration.routeKey,
     connectedAt: new Date(),
     lastPing: new Date(),
     metadata: payload.metadata,
@@ -405,19 +427,19 @@ function handleRegister(
   setClient(client);
 
   // Update token associations
-  const tokenClients = tokenToClients.get(payload.pairingToken) || {};
+  const tokenClients = tokenToClients.get(registration.routeKey) || {};
   if (payload.clientType === "revit-plugin") {
     tokenClients.revit = clientId;
-    const tokenInfo = pairingTokens.get(payload.pairingToken);
+    const tokenInfo = registration.mode === "legacy" ? pairingTokens.get(registration.routeKey) : undefined;
     if (tokenInfo) tokenInfo.revitClientId = clientId;
   } else {
     tokenClients.mcp = clientId;
-    const tokenInfo = pairingTokens.get(payload.pairingToken);
+    const tokenInfo = registration.mode === "legacy" ? pairingTokens.get(registration.routeKey) : undefined;
     if (tokenInfo) tokenInfo.mcpClientId = clientId;
   }
-  tokenToClients.set(payload.pairingToken, tokenClients);
+  tokenToClients.set(registration.routeKey, tokenClients);
 
-  console.log(`[Relay] Registered ${payload.clientType}: ${clientId} with token ${payload.pairingToken}`);
+  console.log(`[Relay] Registered ${payload.clientType}: ${clientId} with ${registration.mode} credential`);
 
   // Check if paired
   const pairedClientId = payload.clientType === "revit-plugin" ? tokenClients.mcp : tokenClients.revit;
@@ -639,8 +661,9 @@ export async function sendCommandViaToken(
   const tokenClients = tokenToClients.get(token);
   if (!tokenClients?.revit) {
     throw new Error(
-      "No Revit plugin connected for this token. " +
-      "Open Revit, go to Settings → Cloud Relay and click Connect."
+      "No registered Revit WebSocket client for this selected Datum connection. " +
+      "Open Revit > Revit MCP Plugin > Settings, confirm the plugin API key, " +
+      "then click Revit MCP Switch to connect or reconnect realtime."
     );
   }
 
