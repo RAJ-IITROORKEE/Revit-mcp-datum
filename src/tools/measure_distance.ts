@@ -1,6 +1,38 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedToolCatch, normalizedToolResult } from "./_result.js";
+
+const pointSchema = z.object({
+  x: z.number().describe("X coordinate in mm"),
+  y: z.number().describe("Y coordinate in mm"),
+  z: z.number().describe("Z coordinate in mm"),
+});
+
+type MeasureDistanceArgs = {
+  fromPoint?: z.infer<typeof pointSchema>;
+  toPoint?: z.infer<typeof pointSchema>;
+  point1?: z.infer<typeof pointSchema>;
+  point2?: z.infer<typeof pointSchema>;
+  elementIds?: number[];
+  elementId1?: number;
+  elementId2?: number;
+  [key: string]: unknown;
+};
+
+export function normalizeMeasureDistanceArgs(args: MeasureDistanceArgs): MeasureDistanceArgs {
+  const elementIds = args.elementIds ??
+    (args.elementId1 !== undefined && args.elementId2 !== undefined
+      ? [args.elementId1, args.elementId2]
+      : undefined);
+
+  return {
+    ...args,
+    fromPoint: args.fromPoint ?? args.point1,
+    toPoint: args.toPoint ?? args.point2,
+    elementIds,
+  };
+}
 
 export function registerMeasureDistanceTool(server: McpServer) {
   server.tool(
@@ -9,25 +41,27 @@ export function registerMeasureDistanceTool(server: McpServer) {
     {
       measurementType: z
         .enum(["PointToPoint", "ElementToElement", "ElementToPoint", "FaceToFace", "EdgeToEdge"])
+        .optional()
         .describe(
-          "Type of measurement: 'PointToPoint' for direct distance, 'ElementToElement' for closest point distance, 'ElementToPoint', 'FaceToFace' for surface-to-surface, 'EdgeToEdge' for edge-to-edge."
+          "Deprecated compatibility hint. The installed handler selects point or element measurement from the supplied fields."
         ),
-      point1: z
-        .object({
-          x: z.number().describe("X coordinate in mm"),
-          y: z.number().describe("Y coordinate in mm"),
-          z: z.number().describe("Z coordinate in mm"),
-        })
+      fromPoint: pointSchema
         .optional()
-        .describe("First point (for PointToPoint, ElementToPoint)"),
-      point2: z
-        .object({
-          x: z.number().describe("X coordinate in mm"),
-          y: z.number().describe("Y coordinate in mm"),
-          z: z.number().describe("Z coordinate in mm"),
-        })
+        .describe("Start point for point-to-point measurement, in mm"),
+      toPoint: pointSchema
         .optional()
-        .describe("Second point (for PointToPoint)"),
+        .describe("End point for point-to-point measurement, in mm"),
+      elementIds: z
+        .array(z.number())
+        .length(2)
+        .optional()
+        .describe("Two Revit ElementIds to measure"),
+      point1: pointSchema
+        .optional()
+        .describe("Deprecated alias for fromPoint"),
+      point2: pointSchema
+        .optional()
+        .describe("Deprecated alias for toPoint"),
       elementId1: z
         .number()
         .optional()
@@ -55,11 +89,11 @@ export function registerMeasureDistanceTool(server: McpServer) {
     async (args) => {
       try {
         const response = await withRevitConnection(async (revitClient) => {
-          return await revitClient.sendCommand("measure_distance", args);
+          return await revitClient.sendCommand("measure_distance", normalizeMeasureDistanceArgs(args));
         });
-        return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
+        return normalizedToolResult("measure_distance", response);
       } catch (error) {
-        return { content: [{ type: "text", text: `Measure distance failed: ${error instanceof Error ? error.message : String(error)}` }] };
+        return normalizedToolCatch("measure_distance", error);
       }
     }
   );

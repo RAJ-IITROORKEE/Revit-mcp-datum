@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedMutationToolResult, normalizedToolCatch } from "./_result.js";
 
 export function registerCreateRoomSeparationLineTool(server: McpServer) {
   server.tool(
@@ -23,6 +24,7 @@ export function registerCreateRoomSeparationLineTool(server: McpServer) {
             }),
           })
         )
+        .min(1)
         .describe("Array of line segments to create as room separation lines"),
     },
     async (args, extra) => {
@@ -36,25 +38,9 @@ export function registerCreateRoomSeparationLineTool(server: McpServer) {
           );
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedMutationToolResult("create_room_separation_line", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create room separation line failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_room_separation_line", error);
       }
     }
   );

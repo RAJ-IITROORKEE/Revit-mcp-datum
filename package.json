@@ -11,6 +11,7 @@
     "clean": "rimraf build",
     "prebuild": "npm run clean",
     "build": "tsc",
+    "test": "npm run build && node --test build/tools/contracts.test.js",
     "start": "node --env-file=.env build/server-combined.js",
     "start:stdio": "node --env-file=.env build/index.js",
     "start:relay": "node --env-file=.env build/relay/relay-server.js",

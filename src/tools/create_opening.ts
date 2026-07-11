@@ -1,6 +1,25 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedMutationToolResult, normalizedToolCatch } from "./_result.js";
+
+const openingPointSchema = z.object({
+  x: z.number().describe("X coordinate in mm"),
+  y: z.number().describe("Y coordinate in mm"),
+  z: z.number().optional().default(0).describe("Z coordinate in mm"),
+});
+
+const nativeRectangularOpeningSchema = z.object({
+  lowerLeft: openingPointSchema,
+  upperRight: openingPointSchema,
+});
+
+const compatibleRectangularOpeningSchema = z.object({
+  centerPoint: openingPointSchema,
+  width: z.number().positive().describe("Width of the opening in mm"),
+  height: z.number().positive().describe("Height of the opening in mm"),
+  sillHeight: z.number().optional(),
+});
 
 export function registerCreateOpeningTool(server: McpServer) {
   server.tool(
@@ -42,24 +61,10 @@ export function registerCreateOpeningTool(server: McpServer) {
                 "Custom boundary lines for the opening (closed loop). Used for non-rectangular openings."
               ),
             rectangularOpening: z
-              .object({
-                centerPoint: z.object({
-                  x: z.number().describe("X coordinate of center in mm"),
-                  y: z.number().describe("Y coordinate of center in mm"),
-                  z: z.number().optional().default(0).describe("Z coordinate in mm"),
-                }),
-                width: z.number().describe("Width of the opening in mm"),
-                height: z.number().describe("Height of the opening in mm"),
-                sillHeight: z
-                  .number()
-                  .optional()
-                  .describe(
-                    "Height from floor to bottom of opening in mm (for wall openings, e.g., window sill height)"
-                  ),
-              })
+              .union([nativeRectangularOpeningSchema, compatibleRectangularOpeningSchema])
               .optional()
               .describe(
-                "Simplified rectangular opening definition. Use either this OR boundary, not both."
+                "Use lowerLeft/upperRight or centerPoint/width/height in mm. Geometry is resolved by the Revit handler."
               ),
             circularOpening: z
               .object({
@@ -111,25 +116,9 @@ export function registerCreateOpeningTool(server: McpServer) {
           return await revitClient.sendCommand("create_opening", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedMutationToolResult("create_opening", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create opening failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_opening", error);
       }
     }
   );
