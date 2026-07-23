@@ -14,6 +14,7 @@ import { registerExportViewTool } from "./export_view.js";
 import { normalizeExportViewArgs } from "./export_view.js";
 import { normalizeMeasureDistanceArgs, registerMeasureDistanceTool } from "./measure_distance.js";
 import { registerTools } from "./register.js";
+import { splitPlaceComponentBatches } from "./place_component.js";
 
 type RegisteredDefinition = {
   name: string;
@@ -48,6 +49,23 @@ function schemaFor(register: (server: McpServer) => void): z.ZodObject<ZodRawSha
 function resultPayload(result: ReturnType<typeof normalizedToolResult>): Record<string, unknown> {
   return JSON.parse(result.content[0].text) as Record<string, unknown>;
 }
+
+test("place_component defaults to singleton Revit commands", () => {
+  const batches = splitPlaceComponentBatches({
+    components: [{ familyTypeId: 1 }, { familyTypeId: 2 }],
+    transactionName: "Place test components",
+  });
+
+  assert.equal(batches.length, 2);
+  assert.deepEqual(batches.map((batch) => batch.components), [
+    [{ familyTypeId: 1 }],
+    [{ familyTypeId: 2 }],
+  ]);
+  assert.deepEqual(batches.map((batch) => batch.transactionName), [
+    "Place test components [1/2]",
+    "Place test components [2/2]",
+  ]);
+});
 
 test("audited schemas expose handler-native fields and normalize documented aliases", () => {
   const measureSchema = schemaFor(registerMeasureDistanceTool);
