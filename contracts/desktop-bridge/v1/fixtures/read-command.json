@@ -1,0 +1,15 @@
+{
+  "protocolVersion": 1,
+  "type": "command",
+  "commandId": "cmd_read_levels_00000001",
+  "jobId": "job_fixture_001",
+  "connectionId": "connection_fixture_001",
+  "revitInstanceId": "instance_fixture_0001",
+  "routeGeneration": 3,
+  "leaseEpoch": 7,
+  "documentFingerprint": "document_fixture_000001",
+  "tool": "get_levels_list",
+  "args": {},
+  "deadlineUnixMs": 1770000000000,
+  "mutationClass": "read"
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v1/relay-session-claims.json",
+  "title": "Datumm Relay Session Claims",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "iss",
+    "aud",
+    "jti",
+    "sub",
+    "connectionId",
+    "deviceId",
+    "revitInstanceId",
+    "role",
+    "scopes",
+    "routeGeneration",
+    "iat",
+    "nbf",
+    "exp"
+  ],
+  "properties": {
+    "iss": { "const": "datumm-relay" },
+    "aud": { "enum": ["mcp-server", "revit-plugin", "desktop-bridge"] },
+    "jti": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "sub": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "connectionId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "deviceId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "revitInstanceId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "role": { "enum": ["mcp-executor", "desktop-bridge", "plugin-direct"] },
+    "scopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+    },
+    "routeGeneration": { "type": "integer", "minimum": 1 },
+    "iat": { "type": "integer", "minimum": 1 },
+    "nbf": { "type": "integer", "minimum": 1 },
+    "exp": { "type": "integer", "exclusiveMinimum": 1 }
+  }
+}

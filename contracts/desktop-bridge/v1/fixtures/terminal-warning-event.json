@@ -1,0 +1,11 @@
+{
+  "protocolVersion": 1,
+  "eventId": "event_warning_00000001",
+  "jobId": "job_fixture_002",
+  "kind": "warning",
+  "severity": "warning",
+  "terminal": false,
+  "timestamp": "2026-07-24T12:00:00.000Z",
+  "message": "The live stream is reconnecting. Execution is still monitored.",
+  "status": "RUNNING"
+}

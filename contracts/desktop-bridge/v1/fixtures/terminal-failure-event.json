@@ -1,0 +1,14 @@
+{
+  "protocolVersion": 1,
+  "eventId": "event_terminal_00000001",
+  "jobId": "job_fixture_003",
+  "kind": "terminal",
+  "severity": "error",
+  "terminal": true,
+  "timestamp": "2026-07-24T12:00:01.000Z",
+  "message": "The build stopped and requires Revit reconciliation.",
+  "status": "RECOVERY_REQUIRED",
+  "details": {
+    "recovery": "reconcile_unknown_mutation"
+  }
+}

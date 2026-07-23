@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 1,
+  "type": "response",
+  "commandId": "cmd_mutate_wall_000002",
+  "jobId": "job_fixture_003",
+  "connectionId": "connection_fixture_001",
+  "revitInstanceId": "instance_fixture_0001",
+  "routeGeneration": 3,
+  "leaseEpoch": 9,
+  "documentFingerprint": "document_fixture_000001",
+  "outcome": "OUTCOME_UNKNOWN",
+  "success": false,
+  "error": {
+    "code": "RESPONSE_LOST_AFTER_DISPATCH",
+    "message": "The command may have reached Revit; reconcile before retrying.",
+    "retryable": false
+  }
+}
