@@ -1,0 +1,10 @@
+{
+  "protocolVersion": 2,
+  "jobId": "job-01J000000000000000000000",
+  "sequence": 4,
+  "todos": [
+    { "id": "todo-levels", "order": 1, "content": "Resolve the target Revit level", "status": "completed", "dependsOn": [] },
+    { "id": "todo-shell", "order": 2, "content": "Create the 40 x 50 ft building shell", "status": "in_progress", "dependsOn": ["todo-levels"] },
+    { "id": "todo-rooms", "order": 3, "content": "Place and validate the 3BHK rooms", "status": "pending", "dependsOn": ["todo-shell"] }
+  ]
+}

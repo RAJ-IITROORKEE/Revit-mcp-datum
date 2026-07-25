@@ -1,0 +1,13 @@
+{
+  "protocolVersion": 2,
+  "type": "authenticated_frame",
+  "sessionId": "pipe-session-01J000000000000000",
+  "direction": "client_to_plugin",
+  "sequence": 1,
+  "payloadType": "command",
+  "payloadHash": "33c02faf0bb0c7ed29e8cbe9aa8f01704f7314974b9936061a02de97cd40b430",
+  "payload": {
+    "commandId": "cmd-read-01J000000000000000000"
+  },
+  "mac": "FQqzPeq-xLQ0vBfloc6oPDiBrOcXtiMnOPn9UtRmnJU"
+}

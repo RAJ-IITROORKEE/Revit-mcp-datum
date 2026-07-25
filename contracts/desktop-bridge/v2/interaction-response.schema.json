@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/interaction-response.json",
+  "title": "Datumm Question or Permission Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "responseId", "requestId", "jobId", "runtimeId", "stateVersion", "leaseEpoch", "kind", "decision", "respondedAt"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "responseId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "requestId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "stateVersion": { "type": "integer", "minimum": 1 },
+    "leaseEpoch": { "type": "integer", "minimum": 1 },
+    "kind": { "enum": ["question", "permission"] },
+    "decision": { "enum": ["answer", "approve", "deny", "cancel"] },
+    "value": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "planId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "planRevision": { "type": "integer", "minimum": 1 },
+    "planFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "permissionGrant": { "$ref": "https://contracts.datumm.com/desktop-bridge/v2/permission-grant.json" },
+    "respondedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "permission" } }, "required": ["kind"] },
+      "then": { "required": ["planId", "planRevision", "planFingerprint"], "properties": { "decision": { "enum": ["approve", "deny", "cancel"] } } }
+    },
+    {
+      "if": { "properties": { "decision": { "const": "approve" } }, "required": ["decision"] },
+      "then": { "required": ["permissionGrant"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "question" } }, "required": ["kind"] },
+      "then": { "properties": { "decision": { "const": "answer" } }, "required": ["value"] }
+    }
+  ]
+}

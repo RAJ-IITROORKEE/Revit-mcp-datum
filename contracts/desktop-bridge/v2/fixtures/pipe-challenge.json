@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 2,
+  "type": "challenge",
+  "sessionId": "pipe-session-01J000000000000000",
+  "desktopDeviceId": "desktop-device-001",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "pluginPid": 4242,
+  "pluginVersion": "5.0.0-alpha.1",
+  "catalogHash": "1cccdf796f16c278a8b14cc94f5b24b3b4d26a00f4d45135cecf77a4e729f743",
+  "maxFrameBytes": 8388608,
+  "clientNonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "serverNonce": "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8",
+  "clientTimestampUnixMs": 1785067200000,
+  "serverTimestampUnixMs": 1785067201000,
+  "transcriptHash": "e46c660024fa6a6d60e10fd9596c5c81fb527d330445c3684e84c9baf3f4d61e",
+  "serverProof": "lgF8eQ7YG9mgju_L4-uYvusf4UtZYpo_znAlrpsYjAQ"
+}

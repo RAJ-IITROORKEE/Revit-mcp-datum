@@ -1,0 +1,12 @@
+{
+  "protocolVersion": 2,
+  "type": "hello",
+  "desktopDeviceId": "desktop-device-001",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "minProtocolVersion": 2,
+  "maxProtocolVersion": 2,
+  "maxFrameBytes": 8388608,
+  "clientNonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "clientTimestampUnixMs": 1785067200000
+}

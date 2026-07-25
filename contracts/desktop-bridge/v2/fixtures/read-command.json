@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 2,
+  "type": "command",
+  "commandId": "cmd-read-01J00000000000000000000",
+  "jobId": "job-01J000000000000000000000",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "connectionId": "connection-01J00000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "routeGeneration": 3,
+  "leaseEpoch": 7,
+  "stateVersion": 4,
+  "documentFingerprint": "doc-fingerprint-0000000000000001",
+  "tool": "get_levels_list",
+  "args": {},
+  "payloadHash": "820d765f4c8f79228751c85b55d2e58a4a8aef7fa2d6ac7769c228bf52cd9d33",
+  "deadlineUnixMs": 1785070860000,
+  "mutationClass": "read"
+}

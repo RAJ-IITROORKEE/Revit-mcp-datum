@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/execution-snapshot.json",
+  "title": "Datumm Immutable Execution Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "snapshotId", "snapshotHash", "jobId", "runtimeId", "connectionId", "revitInstanceId", "documentFingerprint", "planId", "planRevision", "planContentHash", "policyCatalogVersion", "policyCatalogHash", "units", "steps", "createdAt"],
+  "properties": {
+    "schemaVersion": { "const": "execution-snapshot/v1" },
+    "snapshotId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "snapshotHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "connectionId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "revitInstanceId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "documentFingerprint": { "type": "string", "minLength": 16, "maxLength": 256 },
+    "planId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "planRevision": { "type": "integer", "minimum": 1 },
+    "planContentHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "policyCatalogVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "policyCatalogHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "units": { "const": "mm" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stepId", "order", "tool", "args", "dependsOn", "mutationClass", "timeoutMs", "payloadHash"],
+        "properties": {
+          "stepId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "order": { "type": "integer", "minimum": 1 },
+          "tool": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,127}$" },
+          "args": { "type": "object" },
+          "dependsOn": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true },
+          "mutationClass": { "enum": ["read", "mutation", "dangerous"] },
+          "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 600000 },
+          "payloadHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

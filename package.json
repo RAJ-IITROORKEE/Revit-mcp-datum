@@ -12,6 +12,9 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "test": "npm run build && node --test build/tools/contracts.test.js",
+    "contracts:v2:generate": "npm run build && node scripts/generate-local-tool-policy.mjs",
+    "contracts:v2:fixtures": "node scripts/update-local-runtime-fixtures.mjs",
+    "contracts:v2:validate": "npm run build && node scripts/validate-local-runtime-contracts.mjs",
     "start": "node --env-file=.env build/server-combined.js",
     "start:stdio": "node --env-file=.env build/index.js",
     "start:relay": "node --env-file=.env build/relay/relay-server.js",
@@ -52,6 +55,9 @@
     "@types/express": "^5.0.6",
     "@types/node": "^22.13.10",
     "@types/ws": "^8.18.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "canonicalize": "^2.1.0",
     "rimraf": "^5.0.10",
     "typescript": "^5.8.2"
   }

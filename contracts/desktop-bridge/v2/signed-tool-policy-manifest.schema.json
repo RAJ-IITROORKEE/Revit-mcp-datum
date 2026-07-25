@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/signed-tool-policy-manifest.json",
+  "title": "Datumm Signed Local Tool Policy Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["algorithm", "issuer", "kid", "manifest", "signature"],
+  "properties": {
+    "algorithm": { "const": "Ed25519" },
+    "issuer": { "const": "https://www.datumm.ai" },
+    "kid": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "manifest": { "$ref": "https://contracts.datumm.com/desktop-bridge/v2/tool-policy-manifest.json" },
+    "signature": { "type": "string", "pattern": "^[A-Za-z0-9_-]{32,512}$" }
+  }
+}

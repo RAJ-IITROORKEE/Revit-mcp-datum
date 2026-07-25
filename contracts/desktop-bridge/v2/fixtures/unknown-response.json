@@ -1,0 +1,23 @@
+{
+  "protocolVersion": 2,
+  "type": "response",
+  "commandId": "cmd-mutation-01J0000000000000000",
+  "jobId": "job-01J000000000000000000000",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "connectionId": "connection-01J00000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "routeGeneration": 3,
+  "leaseEpoch": 7,
+  "stateVersion": 8,
+  "documentFingerprint": "doc-fingerprint-0000000000000001",
+  "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+  "mutationClass": "mutation",
+  "journalState": "DISPATCHED",
+  "outcome": "OUTCOME_UNKNOWN",
+  "journalEvidenceHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "error": {
+    "code": "PIPE_DISCONNECTED_AFTER_DISPATCH",
+    "message": "The command outcome must be reconciled before execution can continue.",
+    "retryable": false
+  }
+}

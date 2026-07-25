@@ -1,0 +1,64 @@
+{
+  "protocolVersion": 2,
+  "type": "command",
+  "commandId": "cmd-mutation-01J0000000000000000",
+  "jobId": "job-01J000000000000000000000",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "connectionId": "connection-01J00000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "routeGeneration": 3,
+  "leaseEpoch": 7,
+  "stateVersion": 8,
+  "documentFingerprint": "doc-fingerprint-0000000000000001",
+  "tool": "create_wall",
+  "args": {
+    "levelId": "42",
+    "walls": [
+      {
+        "startPoint": {
+          "x": 0,
+          "y": 0
+        },
+        "endPoint": {
+          "x": 12192,
+          "y": 0
+        }
+      }
+    ]
+  },
+  "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+  "deadlineUnixMs": 1785071040000,
+  "mutationClass": "mutation",
+  "planId": "plan-3bhk-001",
+  "planRevision": 2,
+  "planFingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+  "stepId": "step-wall",
+  "idempotencyKey": "idem-01J000000000000000000000",
+  "sessionTag": "session-01J0000000000000000000",
+  "executionSnapshotId": "snapshot-01J0000000000000000000",
+  "executionSnapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+  "stepAuthorization": {
+    "algorithm": "Ed25519",
+    "issuer": "https://www.datumm.ai",
+    "kid": "fixture-ed25519-rfc8032-1",
+    "jti": "step-auth-01J000000000000000000",
+    "userSubject": "user_fixture_001",
+    "desktopDeviceId": "desktop-device-001",
+    "runtimeId": "runtime-01J00000000000000000000000",
+    "jobId": "job-01J000000000000000000000",
+    "revitInstanceId": "revit-01J00000000000000000000",
+    "documentFingerprint": "doc-fingerprint-0000000000000001",
+    "leaseEpoch": 7,
+    "executionSnapshotId": "snapshot-01J0000000000000000000",
+    "executionSnapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+    "planId": "plan-3bhk-001",
+    "planRevision": 2,
+    "planFingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+    "stepId": "step-wall",
+    "tool": "create_wall",
+    "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+    "issuedAt": "2026-07-26T12:00:00.000Z",
+    "expiresAt": "2026-07-26T12:10:00.000Z",
+    "signature": "Y1uab6BPuESYy27YGBiPsi_v9lifZENPmQhQD6_YxqeoNYrChYoh6LtnVopelFm1edjpCc2lJ-xNbS3b8x46CA"
+  }
+}

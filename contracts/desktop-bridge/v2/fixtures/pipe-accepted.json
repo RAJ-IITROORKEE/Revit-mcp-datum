@@ -1,0 +1,10 @@
+{
+  "protocolVersion": 2,
+  "type": "accepted",
+  "sessionId": "pipe-session-01J000000000000000",
+  "transcriptHash": "e46c660024fa6a6d60e10fd9596c5c81fb527d330445c3684e84c9baf3f4d61e",
+  "maxFrameBytes": 8388608,
+  "clientToPluginInitialSequence": 1,
+  "pluginToClientInitialSequence": 1,
+  "serverFinishedMac": "QopJ5Yb1ZWw8VgIb6zogMCVkPTteWyWr2uYya6KXXgI"
+}
