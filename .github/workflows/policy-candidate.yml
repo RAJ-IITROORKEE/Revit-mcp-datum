@@ -1,0 +1,33 @@
+name: Build policy candidate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-attest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run contracts:v2:validate
+      - run: npm run contracts:v2:generate
+      - run: git diff --exit-code -- contracts/desktop-bridge/v2/tool-policy-manifest.json
+      - run: npm run generate:policy-candidate -- --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/policy-candidate"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: policy-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/policy-candidate
+          if-no-files-found: error
