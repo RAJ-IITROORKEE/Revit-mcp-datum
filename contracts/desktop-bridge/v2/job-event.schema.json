@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/job-event.json",
+  "title": "Datumm Durable Job Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "eventId", "jobId", "runtimeId", "sequence", "stateVersion", "kind", "severity", "terminal", "timestamp", "message"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "eventId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "stateVersion": { "type": "integer", "minimum": 1 },
+    "kind": { "enum": ["runtime.started", "planner.started", "planner.summary", "plan.ready", "todo.updated", "question.asked", "question.replied", "permission.asked", "permission.replied", "tool.pending", "tool.dispatched", "tool.completed", "tool.failed", "tool.unknown", "validation.completed", "job.completed", "job.failed", "job.cancelled", "job.recovery_required"] },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "terminal": { "type": "boolean" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "message": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "commandId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "tool": { "type": "string", "maxLength": 128 },
+    "status": { "enum": ["QUEUED", "RUNNING", "AWAITING_USER", "COMPLETED", "FAILED", "CANCELLED", "RECOVERY_REQUIRED"] },
+    "publicData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "planId": { "type": "string", "maxLength": 128 },
+        "planRevision": { "type": "integer", "minimum": 1 },
+        "phaseId": { "type": "string", "maxLength": 128 },
+        "stepId": { "type": "string", "maxLength": 128 },
+        "requestId": { "type": "string", "maxLength": 128 },
+        "todoCount": { "type": "integer", "minimum": 0, "maximum": 500 },
+        "createdElementCount": { "type": "integer", "minimum": 0 },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "observationSummary": { "type": "string", "maxLength": 2000 }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/policy-provenance-attestation.json",
+  "title": "Datumm MCP Policy Provenance Attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "sourceRepository", "commit", "treeHash", "catalogHash", "sourceToolCount", "localToolCount", "excludedCloudTools", "generator", "generatorVersion", "validatedAt", "clean"],
+  "properties": {
+    "schema": { "const": "datumm.revit.policy-provenance-attestation/v1" },
+    "sourceRepository": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "treeHash": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+    "catalogHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sourceToolCount": { "const": 155 },
+    "localToolCount": { "const": 152 },
+    "excludedCloudTools": { "const": ["query_stored_data", "store_project_data", "store_room_data"] },
+    "generator": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "validatedAt": { "type": "string", "format": "date-time" },
+    "clean": { "const": true }
+  }
+}

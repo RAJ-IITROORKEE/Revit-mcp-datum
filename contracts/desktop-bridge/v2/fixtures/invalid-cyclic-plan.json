@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "copilot-plan/v1",
+  "id": "invalid-cycle",
+  "conversationId": "conversation-01J00000000000000",
+  "revision": 1,
+  "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "executionSnapshotId": "snapshot-01J0000000000000000000",
+  "executionSnapshotHash": "abababababababababababababababababababababababababababababababab",
+  "status": "draft",
+  "title": "Invalid cyclic plan",
+  "summary": "Negative fixture for semantic validation.",
+  "units": "mm",
+  "assumptions": [],
+  "constraints": [],
+  "warnings": [],
+  "phases": [{ "id": "phase", "title": "Invalid", "order": 1, "status": "pending", "stepIds": ["step-a", "step-b"] }],
+  "steps": [
+    { "id": "step-a", "phaseId": "phase", "order": 1, "kind": "observe", "title": "A", "toolName": "get_levels_list", "dependsOn": ["step-b"], "status": "pending" },
+    { "id": "step-b", "phaseId": "phase", "order": 2, "kind": "mutate", "title": "B", "toolName": "create_wall", "dependsOn": ["step-a"], "status": "pending" }
+  ],
+  "capabilities": { "canApprove": false, "canRevise": true, "canEdit": true, "canCancel": true },
+  "createdAt": "2026-07-26T12:00:00.000Z",
+  "updatedAt": "2026-07-26T12:00:00.000Z"
+}

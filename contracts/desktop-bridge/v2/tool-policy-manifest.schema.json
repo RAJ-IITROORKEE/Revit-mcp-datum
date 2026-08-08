@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/tool-policy-manifest.json",
+  "title": "Datumm Local Tool Policy Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "catalogVersion", "catalogHash", "localToolCount", "excludedCloudTools", "tools"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "catalogVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "catalogHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "localToolCount": { "const": 152 },
+    "excludedCloudTools": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "enum": ["query_stored_data", "store_project_data", "store_room_data"] },
+      "uniqueItems": true
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 152,
+      "maxItems": 152,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "mutationClass", "retryPolicy", "timeoutMs", "createdIdsRequired", "sessionTagSupported", "automaticRollbackAllowed", "maxArgsBytes", "maxResultBytes"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,127}$" },
+          "mutationClass": { "enum": ["read", "mutation", "dangerous"] },
+          "retryPolicy": { "enum": ["read_only", "never"] },
+          "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 600000 },
+          "createdIdsRequired": { "type": "boolean" },
+          "sessionTagSupported": { "type": "boolean" },
+          "automaticRollbackAllowed": { "type": "boolean" },
+          "maxArgsBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 },
+          "maxResultBytes": { "type": "integer", "minimum": 1, "maximum": 8388608 }
+        }
+      }
+    }
+  }
+}

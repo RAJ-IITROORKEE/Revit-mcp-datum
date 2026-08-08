@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 1,
+  "type": "response",
+  "commandId": "cmd_mutate_wall_000001",
+  "jobId": "job_fixture_002",
+  "connectionId": "connection_fixture_001",
+  "revitInstanceId": "instance_fixture_0001",
+  "routeGeneration": 3,
+  "leaseEpoch": 8,
+  "documentFingerprint": "document_fixture_000001",
+  "outcome": "COMPLETED",
+  "success": true,
+  "result": {
+    "Success": true
+  },
+  "createdElementIds": ["501"],
+  "durationMs": 1432
+}

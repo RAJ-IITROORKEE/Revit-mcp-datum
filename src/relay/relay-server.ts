@@ -33,7 +33,8 @@ import {
   generatePairingToken,
   isValidPairingToken,
 } from "./types.js";
-import { verifyRelaySession } from "./relay-session.js";
+import { claimRouteOwner, createRouteBinding, isCurrentRouteOwner, releaseRouteOwner, type RouteBinding } from "./route-ownership.js";
+import { requireRelayCommandDispatchEnabled, requireRelaySessionAuthorizationEnabled } from "./relay-dispatch-gate.js";
 import { logWebSocketEvent, logError } from "../utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -53,18 +54,26 @@ interface ConnectedClient extends ClientInfo {
     resolve: (response: ResponsePayload) => void;
     reject: (error: Error) => void;
     timeout: NodeJS.Timeout;
+    routeKey: string;
+    endpointClientId: string;
+    routeGeneration: number;
   }>;
+  relayScopes: string[];
 }
 
 const clients = new Map<string, ConnectedClient>();
 const pairingTokens = new Map<string, PairingToken>();
 const tokenToClients = new Map<string, { revit?: string; mcp?: string }>();
+const routeBindings = new Map<string, RouteBinding>();
 
 // Pending promises for sendCommandViaToken() — keyed by messageId
 const directPending = new Map<string, {
   resolve: (result: unknown) => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;
+  routeKey: string;
+  endpointClientId: string;
+  routeGeneration: number;
 }>();
 
 // ─── Server Setup ────────────────────────────────────────────────────────────
@@ -248,25 +257,21 @@ function validateToken(token: string): boolean {
   return info !== null;
 }
 
-function resolveRegisterRouteKey(payload: RegisterPayload): { routeKey: string; mode: "session" | "legacy"; error?: never } | { error: string } {
+function resolveRegisterRouteKey(payload: RegisterPayload): { routeKey: string; mode: "session" | "legacy"; scopes: string[]; error?: never } | { error: string } {
   const relaySession = typeof payload.relaySession === "string" ? payload.relaySession.trim() : "";
   if (relaySession) {
-    const verification = verifyRelaySession(relaySession);
-    if (!verification.valid) return { error: verification.error };
-    if (payload.connectionId && payload.connectionId !== verification.session.payload.connectionId) {
-      return { error: "Relay session connectionId mismatch" };
+    try {
+      requireRelaySessionAuthorizationEnabled();
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Relay session authorization is disabled" };
     }
-    if (!tokenToClients.has(verification.session.routeKey)) {
-      tokenToClients.set(verification.session.routeKey, {});
-    }
-    return { routeKey: verification.session.routeKey, mode: "session" };
   }
 
   const pairingToken = typeof payload.pairingToken === "string" ? payload.pairingToken.trim() : "";
   if (!validateToken(pairingToken)) {
     return { error: "Invalid or expired pairing token" };
   }
-  return { routeKey: pairingToken, mode: "legacy" };
+  return { routeKey: pairingToken, mode: "legacy", scopes: [] };
 }
 
 // ─── Connection Handling ─────────────────────────────────────────────────────
@@ -415,12 +420,20 @@ function handleRegister(
     id: clientId,
     type: payload.clientType,
     pairingToken: registration.routeKey,
+    routeGeneration: 0,
+    endpointRole: payload.endpointRole,
     connectedAt: new Date(),
     lastPing: new Date(),
     metadata: payload.metadata,
     ws,
     pendingCommands: new Map(),
+    relayScopes: registration.scopes,
   };
+
+  const binding = routeBindings.get(registration.routeKey) || createRouteBinding();
+  const owner = claimRouteOwner(binding, payload.clientType, clientId).owner;
+  routeBindings.set(registration.routeKey, binding);
+  client.routeGeneration = owner.generation;
 
   // Register client
   clients.set(clientId, client);
@@ -428,6 +441,10 @@ function handleRegister(
 
   // Update token associations
   const tokenClients = tokenToClients.get(registration.routeKey) || {};
+  const previousClientId = payload.clientType === "revit-plugin" ? tokenClients.revit : tokenClients.mcp;
+  if (previousClientId && previousClientId !== clientId) {
+    clients.get(previousClientId)?.ws.close(4003, "Route ownership replaced");
+  }
   if (payload.clientType === "revit-plugin") {
     tokenClients.revit = clientId;
     const tokenInfo = registration.mode === "legacy" ? pairingTokens.get(registration.routeKey) : undefined;
@@ -468,26 +485,34 @@ function handleRegister(
 }
 
 function handleCommand(client: ConnectedClient, message: RelayMessage) {
+  try {
+    requireRelayCommandDispatchEnabled();
+  } catch (error) {
+    sendError(client.ws, message.id, RelayErrorCodes.UNAUTHORIZED, error instanceof Error ? error.message : "Relay command dispatch is disabled");
+    return;
+  }
   const payload = message.payload as CommandPayload;
   
   // Find paired Revit plugin
   const tokenClients = tokenToClients.get(client.pairingToken);
-  if (!tokenClients?.revit) {
+  const revitClientId = tokenClients?.revit;
+  if (typeof revitClientId !== "string") {
     sendError(client.ws, message.id, RelayErrorCodes.NO_PAIRED_CLIENT, "No Revit plugin connected");
     return;
   }
 
-  const revitClient = clients.get(tokenClients.revit);
-  if (!revitClient) {
+  const candidateRevitClient = clients.get(revitClientId as string);
+  if (candidateRevitClient === undefined) {
     sendError(client.ws, message.id, RelayErrorCodes.CLIENT_DISCONNECTED, "Revit plugin disconnected");
     return;
   }
+  const activeRevitClient = candidateRevitClient as ConnectedClient;
 
-  console.log(`[Relay] Routing command: ${payload.command} from ${client.id} to ${revitClient.id}`);
+  console.log(`[Relay] Routing command: ${payload.command} from ${client.id} to ${activeRevitClient.id}`);
 
   // Forward command to Revit plugin
   const commandMessage = createMessage("command", payload, message.id);
-  send(revitClient.ws, commandMessage);
+  send(activeRevitClient.ws, commandMessage);
 
   // Track pending command for response routing
   const timeout = setTimeout(() => {
@@ -504,6 +529,9 @@ function handleCommand(client: ConnectedClient, message: RelayMessage) {
     resolve: () => {}, // Not used for relay, just for cleanup
     reject: () => {},
     timeout,
+    routeKey: client.pairingToken,
+    endpointClientId: activeRevitClient.id,
+    routeGeneration: activeRevitClient.routeGeneration,
   });
 }
 
@@ -513,6 +541,16 @@ function handleResponse(client: ConnectedClient, message: RelayMessage) {
   // Primary path: resolve a Promise from sendCommandViaToken() (no WS self-connection needed)
   const directHandler = directPending.get(message.id);
   if (directHandler) {
+    if (
+      client.pairingToken !== directHandler.routeKey ||
+      client.routeGeneration !== directHandler.routeGeneration ||
+      !isCurrentRouteOwner(routeBindings.get(directHandler.routeKey), "revit-plugin", client.id, client.routeGeneration)
+    ) {
+      clearTimeout(directHandler.timeout);
+      directPending.delete(message.id);
+      directHandler.reject(new Error("Stale relay route response"));
+      return;
+    }
     clearTimeout(directHandler.timeout);
     directPending.delete(message.id);
     if (payload.success) {
@@ -526,6 +564,10 @@ function handleResponse(client: ConnectedClient, message: RelayMessage) {
 
   // Legacy path: forward to an mcp-server WS client (backwards compat)
   const tokenClients = tokenToClients.get(client.pairingToken);
+  if (!isCurrentRouteOwner(routeBindings.get(client.pairingToken), "revit-plugin", client.id, client.routeGeneration)) {
+    console.warn(`[Relay] Dropping response ${message.id} from stale route owner ${client.id}`);
+    return;
+  }
   if (!tokenClients?.mcp) {
     console.warn(`[Relay] No handler for response ${message.id} — no direct pending and no MCP WS client`);
     return;
@@ -558,12 +600,31 @@ function handleDisconnect(client: ConnectedClient) {
   }
   client.pendingCommands.clear();
 
+  for (const [messageId, pending] of directPending) {
+    if (pending.endpointClientId !== client.id || pending.routeGeneration !== client.routeGeneration) continue;
+    clearTimeout(pending.timeout);
+    directPending.delete(messageId);
+    pending.reject(new Error("Revit relay endpoint disconnected"));
+  }
+
+  if (client.type === "revit-plugin") {
+    for (const mcpClient of clients.values()) {
+      for (const [messageId, pending] of mcpClient.pendingCommands) {
+        if (pending.endpointClientId !== client.id || pending.routeGeneration !== client.routeGeneration) continue;
+        clearTimeout(pending.timeout);
+        mcpClient.pendingCommands.delete(messageId);
+        sendError(mcpClient.ws, messageId, RelayErrorCodes.CLIENT_DISCONNECTED, "Revit relay endpoint disconnected");
+      }
+    }
+  }
+
   // Remove from clients
   clients.delete(client.id);
 
   // Update token associations
   const tokenClients = tokenToClients.get(client.pairingToken);
-  if (tokenClients) {
+  const released = releaseRouteOwner(routeBindings.get(client.pairingToken), client.type, client.id, client.routeGeneration);
+  if (tokenClients && released) {
     if (client.type === "revit-plugin") {
       delete tokenClients.revit;
     } else {
@@ -573,7 +634,7 @@ function handleDisconnect(client: ConnectedClient) {
 
   // Notify paired client
   const pairedClientId = client.type === "revit-plugin" ? tokenClients?.mcp : tokenClients?.revit;
-  if (pairedClientId) {
+  if (released && pairedClientId) {
     const pairedClient = clients.get(pairedClientId);
     if (pairedClient) {
       const statusPayload: StatusPayload = {
@@ -658,8 +719,10 @@ export async function sendCommandViaToken(
   params: unknown,
   timeoutMs = 300000
 ): Promise<unknown> {
+  requireRelayCommandDispatchEnabled();
   const tokenClients = tokenToClients.get(token);
-  if (!tokenClients?.revit) {
+  const revitClientId = tokenClients?.revit;
+  if (typeof revitClientId !== "string") {
     throw new Error(
       "No registered Revit WebSocket client for this selected Datum connection. " +
       "Open Revit > Revit MCP Plugin > Settings, confirm the plugin API key, " +
@@ -667,12 +730,20 @@ export async function sendCommandViaToken(
     );
   }
 
-  const revitClient = clients.get(tokenClients.revit);
-  if (!revitClient || revitClient.ws.readyState !== WebSocket.OPEN) {
+  const candidateRevitClient = clients.get(revitClientId as string);
+  if (candidateRevitClient === undefined) {
+    throw new Error("Revit plugin WebSocket is not open. Waiting for reconnection.");
+  }
+  const activeRevitClient = candidateRevitClient as ConnectedClient;
+  if (activeRevitClient.ws.readyState !== WebSocket.OPEN) {
     throw new Error("Revit plugin WebSocket is not open. Waiting for reconnection.");
   }
 
   const messageId = generateMessageId();
+  const routeBinding = routeBindings.get(token);
+  if (!routeBinding || !isCurrentRouteOwner(routeBinding, "revit-plugin", activeRevitClient.id, activeRevitClient.routeGeneration)) {
+    throw new Error("Revit relay route is stale. Waiting for the current endpoint.");
+  }
 
   return new Promise<unknown>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -680,18 +751,25 @@ export async function sendCommandViaToken(
       reject(new Error(`Revit command '${command}' timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
-    directPending.set(messageId, { resolve, reject, timeout });
+    directPending.set(messageId, {
+      resolve,
+      reject,
+      timeout,
+      routeKey: token,
+      endpointClientId: activeRevitClient.id,
+      routeGeneration: activeRevitClient.routeGeneration,
+    });
 
     const payload: CommandPayload = { command, params, timeout: timeoutMs };
     const commandMessage = createMessage("command", payload, messageId);
-    revitClient.ws.send(JSON.stringify(commandMessage), (error) => {
+    activeRevitClient.ws.send(JSON.stringify(commandMessage), (error) => {
       if (!error) return;
       clearTimeout(timeout);
       directPending.delete(messageId);
       reject(error);
     });
 
-    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${revitClient.id} (msgId=${messageId}, timeoutMs=${timeoutMs})`);
+    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${activeRevitClient.id} (msgId=${messageId}, timeoutMs=${timeoutMs})`);
   });
 }
 

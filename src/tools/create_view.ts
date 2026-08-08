@@ -1,31 +1,27 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedMutationToolResult, normalizedToolCatch } from "./_result.js";
 
 export function registerCreateViewTool(server: McpServer) {
   server.tool(
     "create_view",
-    "Create new views in Revit including floor plans, ceiling plans, sections, elevations, 3D views, and drafting views. Supports setting view name, scale, detail level, and view template. Essential for automated drafting workflows.",
+    "Create FloorPlan, CeilingPlan, or Section views. Use dedicated view tools such as create_drafting_view, create_3d_view, create_area_plan, and create_elevation_marker for other view types.",
     {
       viewType: z
         .enum([
           "FloorPlan",
           "CeilingPlan",
-          "Section",
-          "Elevation",
-          "ThreeD",
-          "DraftingView",
-          "AreaPlan",
-          "EngineeringPlan"
+          "Section"
         ])
-        .describe("Type of view to create. FloorPlan: standard floor plan view. CeilingPlan: reflected ceiling plan. Section: building section view. Elevation: exterior or interior elevation. ThreeD: 3D isometric or perspective view. DraftingView: 2D drafting view for details. AreaPlan: area plan for space calculations. EngineeringPlan: structural or MEP plan view."),
+        .describe("Handler-supported generic view type. Use the dedicated view tools for all other types."),
       viewName: z
         .string()
         .describe("Name for the new view (e.g., 'Level 1 - Furniture Plan', 'Section A-A')"),
       levelId: z
         .number()
         .optional()
-        .describe("ElementId of the level for floor/ceiling/area/engineering plans. Required for plan views."),
+        .describe("ElementId of the level for floor and ceiling plans."),
       viewFamilyTypeId: z
         .number()
         .optional()
@@ -42,25 +38,6 @@ export function registerCreateViewTool(server: McpServer) {
         .number()
         .optional()
         .describe("ElementId of a view template to apply. View templates control view properties, filters, and appearance."),
-      sectionBox: z
-        .object({
-          min: z.object({
-            x: z.number().describe("Minimum X coordinate in mm"),
-            y: z.number().describe("Minimum Y coordinate in mm"),
-            z: z.number().describe("Minimum Z coordinate in mm"),
-          }),
-          max: z.object({
-            x: z.number().describe("Maximum X coordinate in mm"),
-            y: z.number().describe("Maximum Y coordinate in mm"),
-            z: z.number().describe("Maximum Z coordinate in mm"),
-          }),
-        })
-        .optional()
-        .describe("Bounding box for 3D views to limit visible content. Only applicable for ThreeD view type."),
-      isPerspective: z
-        .boolean()
-        .optional()
-        .describe("For 3D views only. True for perspective projection, false for isometric/orthogonal. Default is false."),
     },
     async (args, extra) => {
       const params = args;
@@ -70,25 +47,9 @@ export function registerCreateViewTool(server: McpServer) {
           return await revitClient.sendCommand("create_view", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedMutationToolResult("create_view", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create view failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_view", error);
       }
     }
   );

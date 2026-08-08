@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/plan-artifact.json",
+  "title": "Datumm Copilot Plan Artifact V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "conversationId", "revision", "contentHash", "fingerprint", "executionSnapshotId", "executionSnapshotHash", "status", "title", "summary", "units", "assumptions", "constraints", "warnings", "phases", "steps", "capabilities", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": "copilot-plan/v1" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "conversationId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "contentHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "executionSnapshotId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "executionSnapshotHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["draft", "awaiting_approval", "approved", "executing", "completed", "failed", "cancelled", "superseded"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "units": { "const": "mm" },
+    "assumptions": { "type": "array", "items": { "type": "string", "maxLength": 1000 }, "maxItems": 100 },
+    "constraints": { "type": "array", "items": { "type": "string", "maxLength": 1000 }, "maxItems": 100 },
+    "warnings": { "type": "array", "items": { "type": "string", "maxLength": 1000 }, "maxItems": 100 },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "footprint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["widthMm", "heightMm"],
+          "properties": {
+            "widthMm": { "type": "number", "exclusiveMinimum": 0 },
+            "heightMm": { "type": "number", "exclusiveMinimum": 0 },
+            "areaSqM": { "type": "number", "minimum": 0 }
+          }
+        },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "widthMm": { "type": "number", "exclusiveMinimum": 0 },
+              "heightMm": { "type": "number", "exclusiveMinimum": 0 },
+              "areaSqM": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "order", "status", "stepIds"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "order": { "type": "integer", "minimum": 1 },
+          "status": { "enum": ["pending", "in_progress", "completed", "failed", "blocked", "cancelled"] },
+          "stepIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "phaseId", "order", "kind", "title", "dependsOn", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "phaseId": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "order": { "type": "integer", "minimum": 1 },
+          "kind": { "enum": ["observe", "mutate", "validate", "repair", "summarize"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 2000 },
+          "toolName": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,127}$" },
+          "sanitizedArgs": { "$ref": "#/$defs/sanitizedValue" },
+          "dependsOn": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true },
+          "expectedOutcome": { "type": "string", "maxLength": 2000 },
+          "status": { "enum": ["pending", "in_progress", "completed", "failed", "blocked", "cancelled"] },
+          "reason": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "boq": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "item", "unit", "quantity", "sourceStepIds"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "category": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "item": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "unit": { "enum": ["count", "mm", "m", "sqm", "cum"] },
+          "quantity": { "type": "number", "minimum": 0 },
+          "sourceStepIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true },
+          "estimated": { "type": "boolean" }
+        }
+      }
+    },
+    "diagram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["widthMm", "heightMm", "rooms", "walls", "openings"],
+      "properties": {
+        "widthMm": { "type": "number", "exclusiveMinimum": 0 },
+        "heightMm": { "type": "number", "exclusiveMinimum": 0 },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "xMm", "yMm", "widthMm", "heightMm"],
+            "properties": {
+              "id": { "type": "string" }, "name": { "type": "string" },
+              "xMm": { "type": "number" }, "yMm": { "type": "number" },
+              "widthMm": { "type": "number", "exclusiveMinimum": 0 }, "heightMm": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        },
+        "walls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "start", "end"],
+            "properties": {
+              "id": { "type": "string" },
+              "start": { "$ref": "#/$defs/point" },
+              "end": { "$ref": "#/$defs/point" },
+              "thicknessMm": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "type", "wallId", "position", "widthMm"],
+            "properties": {
+              "id": { "type": "string" }, "type": { "enum": ["door", "window"] },
+              "wallId": { "type": "string" }, "position": { "type": "number", "minimum": 0, "maximum": 1 },
+              "widthMm": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canApprove", "canRevise", "canEdit", "canCancel"],
+      "properties": {
+        "canApprove": { "type": "boolean" }, "canRevise": { "type": "boolean" },
+        "canEdit": { "type": "boolean" }, "canCancel": { "type": "boolean" }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "sanitizedValue": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string", "maxLength": 2000 },
+        { "type": "array", "maxItems": 500, "items": { "$ref": "#/$defs/sanitizedValue" } },
+        {
+          "type": "object",
+          "maxProperties": 200,
+          "propertyNames": { "not": { "enum": ["thought", "reasoning", "analysis", "rawResponse", "systemPrompt", "prompt", "rawToolResult", "toolResult"] } },
+          "additionalProperties": { "$ref": "#/$defs/sanitizedValue" }
+        }
+      ]
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xMm", "yMm"],
+      "properties": { "xMm": { "type": "number" }, "yMm": { "type": "number" } }
+    }
+  }
+}

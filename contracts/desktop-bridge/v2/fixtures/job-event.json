@@ -1,0 +1,17 @@
+{
+  "protocolVersion": 2,
+  "eventId": "event-01J0000000000000000000000",
+  "jobId": "job-01J000000000000000000000",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "sequence": 12,
+  "stateVersion": 8,
+  "kind": "tool.completed",
+  "severity": "info",
+  "terminal": false,
+  "timestamp": "2026-07-26T12:01:20.000Z",
+  "message": "Created the exterior wall.",
+  "commandId": "cmd-mutation-01J0000000000000000",
+  "tool": "create_wall",
+  "status": "RUNNING",
+  "publicData": { "createdElementCount": 1, "durationMs": 4210, "observationSummary": "Created one exterior wall." }
+}

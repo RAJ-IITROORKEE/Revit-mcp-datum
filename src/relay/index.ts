@@ -21,16 +21,6 @@ export {
   sendCommandViaToken,
 } from "./relay-server.js";
 
-export {
-  RELAY_SESSION_PREFIX,
-  createRelaySession,
-  getRelayRouteKey,
-  verifyRelaySession,
-  type RelaySessionPayload,
-  type RelaySessionVerification,
-  type VerifiedRelaySession,
-} from "./relay-session.js";
-
 // Async context for per-request relay token threading
 export { relayTokenStorage, getRelayToken } from "./relay-context.js";
 

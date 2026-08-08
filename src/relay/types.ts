@@ -16,6 +16,8 @@ export interface ClientInfo {
   type: ClientType;
   /** Route key used by the relay. Legacy tokens use the token value; signed sessions use connection:<id>. */
   pairingToken: string;
+  routeGeneration: number;
+  endpointRole?: EndpointRole;
   connectedAt: Date;
   lastPing: Date;
   metadata?: {
@@ -38,6 +40,8 @@ export type RelayMessageType =
   | "status"             // Status update (connection state, etc.)
   | "error";             // Error message
 
+export type EndpointRole = "mcp-server" | "revit-plugin" | "desktop-bridge";
+
 export interface RelayMessage {
   type: RelayMessageType;
   id: string;            // Message ID for request/response correlation
@@ -54,6 +58,8 @@ export interface RegisterPayload {
   /** Signed connection-scoped relay session for the production plugin path. */
   relaySession?: string;
   connectionId?: string;
+  endpointRole?: EndpointRole;
+  routeGeneration?: number;
   metadata?: ClientInfo["metadata"];
 }
 
@@ -110,6 +116,8 @@ export const RelayErrorCodes = {
   INVALID_MESSAGE: "INVALID_MESSAGE",
   UNAUTHORIZED: "UNAUTHORIZED",
   INTERNAL_ERROR: "INTERNAL_ERROR",
+  ROUTE_CONFLICT: "ROUTE_CONFLICT",
+  STALE_ROUTE: "STALE_ROUTE",
 } as const;
 
 // ─── Pairing Token Structure ─────────────────────────────────────────────────

@@ -1,0 +1,32 @@
+{
+  "protocolVersion": 2,
+  "requestId": "permission-01J000000000000000000",
+  "jobId": "job-01J000000000000000000000",
+  "kind": "permission",
+  "category": "destructive_change",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "stateVersion": 8,
+  "leaseEpoch": 7,
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "documentFingerprint": "doc-fingerprint-0000000000000001",
+  "tool": "delete_elements",
+  "payloadHash": "9999999999999999999999999999999999999999999999999999999999999999",
+  "planId": "plan-3bhk-001",
+  "planRevision": 2,
+  "planFingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+  "question": "Approve replacement of the existing layout with revision 2?",
+  "options": [
+    {
+      "label": "Approve replacement",
+      "value": "approve",
+      "recommended": true,
+      "destructive": true
+    },
+    {
+      "label": "Cancel",
+      "value": "cancel"
+    }
+  ],
+  "createdAt": "2026-07-26T12:00:00.000Z",
+  "expiresAt": "2026-07-26T12:15:00.000Z"
+}

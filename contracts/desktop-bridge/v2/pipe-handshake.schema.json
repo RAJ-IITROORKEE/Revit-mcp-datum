@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/pipe-handshake.json",
+  "title": "Datumm Authenticated Pipe Handshake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "type"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "type": { "enum": ["hello", "challenge", "proof", "accepted"] },
+    "desktopDeviceId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "revitInstanceId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "pluginPid": { "type": "integer", "minimum": 1 },
+    "pluginVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "catalogHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "minProtocolVersion": { "const": 2 },
+    "maxProtocolVersion": { "const": 2 },
+    "maxFrameBytes": { "type": "integer", "minimum": 65536, "maximum": 8388608 },
+    "clientNonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "serverNonce": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "clientTimestampUnixMs": { "type": "integer", "minimum": 1 },
+    "serverTimestampUnixMs": { "type": "integer", "minimum": 1 },
+    "transcriptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "serverProof": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "clientProof": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "sessionId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "clientToPluginInitialSequence": { "const": 1 },
+    "pluginToClientInitialSequence": { "const": 1 },
+    "serverFinishedMac": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "hello" } } },
+      "then": {
+        "required": ["desktopDeviceId", "runtimeId", "revitInstanceId", "minProtocolVersion", "maxProtocolVersion", "maxFrameBytes", "clientNonce", "clientTimestampUnixMs"],
+        "not": { "anyOf": [{ "required": ["pluginPid"] }, { "required": ["serverNonce"] }, { "required": ["transcriptHash"] }, { "required": ["sessionId"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "challenge" } } },
+      "then": {
+        "required": ["desktopDeviceId", "runtimeId", "revitInstanceId", "pluginPid", "pluginVersion", "catalogHash", "maxFrameBytes", "clientNonce", "serverNonce", "clientTimestampUnixMs", "serverTimestampUnixMs", "transcriptHash", "serverProof", "sessionId"],
+        "not": { "anyOf": [{ "required": ["minProtocolVersion"] }, { "required": ["clientProof"] }, { "required": ["serverFinishedMac"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "proof" } } },
+      "then": {
+        "required": ["sessionId", "transcriptHash", "clientProof"],
+        "not": { "anyOf": [{ "required": ["desktopDeviceId"] }, { "required": ["clientNonce"] }, { "required": ["serverNonce"] }, { "required": ["serverProof"] }, { "required": ["maxFrameBytes"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "accepted" } } },
+      "then": {
+        "required": ["sessionId", "transcriptHash", "maxFrameBytes", "clientToPluginInitialSequence", "pluginToClientInitialSequence", "serverFinishedMac"],
+        "not": { "anyOf": [{ "required": ["desktopDeviceId"] }, { "required": ["clientNonce"] }, { "required": ["serverNonce"] }, { "required": ["serverProof"] }, { "required": ["clientProof"] }] }
+      }
+    }
+  ]
+}

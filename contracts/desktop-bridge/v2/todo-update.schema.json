@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/todo-update.json",
+  "title": "Datumm Durable Todo Update",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "jobId", "sequence", "todos"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "todos": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "order", "content", "status", "dependsOn"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "order": { "type": "integer", "minimum": 1 },
+          "content": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "status": { "enum": ["pending", "in_progress", "completed", "failed", "blocked", "cancelled"] },
+          "dependsOn": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true },
+          "reason": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    }
+  }
+}

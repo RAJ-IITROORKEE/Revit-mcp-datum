@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedMutationToolResult, normalizedToolCatch } from "./_result.js";
 
 export function registerCreateTagTool(server: McpServer) {
   server.tool(
@@ -23,8 +24,7 @@ export function registerCreateTagTool(server: McpServer) {
           y: z.number().describe("Y coordinate in mm"),
           z: z.number().describe("Z coordinate in mm"),
         })
-        .optional()
-        .describe("Tag placement location. If not specified, uses automatic placement near element."),
+        .describe("Required tag placement location in mm."),
       hasLeader: z
         .boolean()
         .default(false)
@@ -42,25 +42,9 @@ export function registerCreateTagTool(server: McpServer) {
           return await revitClient.sendCommand("create_tag", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedMutationToolResult("create_tag", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create tag failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_tag", error);
       }
     }
   );

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/trust-root.json",
+  "title": "Datumm Revit Policy Trust Root",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema", "issuer", "algorithm", "keys"],
+  "properties": {
+    "$schema": { "const": "https://contracts.datumm.com/desktop-bridge/v2/trust-root.json" },
+    "schema": { "const": "datumm.revit.trust-root/v1" },
+    "issuer": { "const": "https://www.datumm.ai" },
+    "algorithm": { "const": "Ed25519" },
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kid", "publicKeySpkiBase64", "notBefore"],
+        "properties": {
+          "kid": { "type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+          "publicKeySpkiBase64": { "type": "string", "pattern": "^[A-Za-z0-9+/]{40,256}={0,2}$" },
+          "notBefore": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

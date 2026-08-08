@@ -142,6 +142,7 @@ export class RelayClient {
     return new Promise((resolve, reject) => {
       const payload: RegisterPayload = {
         clientType: "mcp-server",
+        endpointRole: "mcp-server",
         pairingToken: this.pairingToken,
       };
 

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/authenticated-frame.json",
+  "title": "Datumm Authenticated Pipe Frame",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "type", "sessionId", "direction", "sequence", "payloadType", "payloadHash", "payload", "mac"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "type": { "const": "authenticated_frame" },
+    "sessionId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "direction": { "enum": ["client_to_plugin", "plugin_to_client"] },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "payloadType": { "enum": ["command", "response", "status", "control"] },
+    "payloadHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "payload": { "type": "object" },
+    "mac": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+  }
+}

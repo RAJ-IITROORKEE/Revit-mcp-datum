@@ -25,10 +25,8 @@ import {
   getConnectedClients, 
   getPairingTokens,
   relayTokenStorage,
-  createRelaySession,
-  verifyRelaySession,
-  type RelaySessionPayload,
 } from "./relay/index.js";
+import { requireRelaySessionAuthorizationEnabled } from "./relay/relay-dispatch-gate.js";
 import logger, { logToolCall, logWebSocketEvent, logServerStartup, logHealthCheck, logError } from "./utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -121,9 +119,11 @@ function getRelayRouteFromHeaders(req: Request):
   | { error: string } {
   const relaySession = getHeaderValue(req, "x-relay-session");
   if (relaySession) {
-    const verification = verifyRelaySession(relaySession);
-    if (!verification.valid) return { error: verification.error };
-    return { routeKey: verification.session.routeKey, credentialType: "session" };
+    try {
+      requireRelaySessionAuthorizationEnabled();
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Relay session authorization is disabled" };
+    }
   }
 
   const relayToken = getHeaderValue(req, "x-relay-token");
@@ -132,20 +132,6 @@ function getRelayRouteFromHeaders(req: Request):
   const tokenInfo = getTokenInfo(relayToken);
   if (!tokenInfo) return { error: "Invalid or expired relay token" };
   return { routeKey: relayToken, credentialType: "legacy-token" };
-}
-
-function readOptionalString(value: unknown, maxLength = 128): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : undefined;
-}
-
-function readStringArray(value: unknown, maxItems = 20): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-    .map((item) => item.trim().slice(0, 64))
-    .slice(0, maxItems);
 }
 
 // ─── MCP Server Factory ─────────────────────────────────────────────────────
@@ -327,40 +313,10 @@ app.post("/api/relay/token", authMiddleware, async (req: Request, res: Response)
 });
 
 app.post("/api/relay/session", authMiddleware, async (req: Request, res: Response) => {
-  const body = req.body as Record<string, unknown> | undefined;
-  const connectionId = readOptionalString(body?.connectionId);
-
-  if (!connectionId) {
-    res.status(400).json({ error: "connectionId is required" });
-    return;
-  }
-
-  const requestedTtlSeconds = typeof body?.ttlSeconds === "number" && Number.isFinite(body.ttlSeconds)
-    ? body.ttlSeconds
-    : 12 * 60 * 60;
-  const ttlSeconds = Math.max(60, Math.min(requestedTtlSeconds, 24 * 60 * 60));
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
-  const payload: RelaySessionPayload = {
-    connectionId,
-    clerkUserId: readOptionalString(body?.clerkUserId),
-    deviceId: readOptionalString(body?.deviceId),
-    scopes: readStringArray(body?.scopes),
-    issuedAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  };
-
   try {
-    const relaySession = createRelaySession(payload);
-    res.json({
-      relaySession,
-      connectionId,
-      expiresAt: expiresAt.toISOString(),
-      websocketUrl: getRelayWebSocketUrl(req),
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unable to create relay session";
-    res.status(500).json({ error: message });
+    requireRelaySessionAuthorizationEnabled();
+  } catch (error) {
+    res.status(503).json({ error: error instanceof Error ? error.message : "Relay session authorization is disabled" });
   }
 });
 
@@ -391,18 +347,11 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
 app.post("/api/relay/validate-and-register", authMiddleware, async (req: Request, res: Response) => {
   const { token, relaySession } = req.body as { token?: string; relaySession?: string };
   if (typeof relaySession === "string" && relaySession.trim()) {
-    const verification = verifyRelaySession(relaySession);
-    if (!verification.valid) {
-      res.status(400).json({ error: verification.error });
-      return;
+    try {
+      requireRelaySessionAuthorizationEnabled();
+    } catch (error) {
+      res.status(503).json({ error: error instanceof Error ? error.message : "Relay session authorization is disabled" });
     }
-
-    res.json({
-      connectionId: verification.session.payload.connectionId,
-      expiresAt: verification.session.payload.expiresAt,
-      websocketUrl: getRelayWebSocketUrl(req),
-      reregistered: false,
-    });
     return;
   }
 

@@ -1,0 +1,18 @@
+{
+  "protocolVersion": 2,
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "desktopDeviceId": "desktop-device-001",
+  "executionHost": "DESKTOP",
+  "catalogVersion": "revit-mcp-local-v2",
+  "catalogHash": "1cccdf796f16c278a8b14cc94f5b24b3b4d26a00f4d45135cecf77a4e729f743",
+  "maxFrameBytes": 8388608,
+  "sidecarVersion": "2.0.0-alpha.1",
+  "desktopVersion": "2.0.0-alpha.1",
+  "startedAt": "2026-07-26T12:00:00.000Z",
+  "capabilities": [
+    "agent-runtime",
+    "revit-mcp-152",
+    "durable-events",
+    "rich-plan-v1"
+  ]
+}

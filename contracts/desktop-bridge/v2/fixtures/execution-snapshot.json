@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "execution-snapshot/v1",
+  "snapshotId": "snapshot-01J0000000000000000000",
+  "snapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+  "jobId": "job-01J000000000000000000000",
+  "runtimeId": "runtime-01J00000000000000000000000",
+  "connectionId": "connection-01J00000000000000000",
+  "revitInstanceId": "revit-01J00000000000000000000",
+  "documentFingerprint": "doc-fingerprint-0000000000000001",
+  "planId": "plan-3bhk-001",
+  "planRevision": 2,
+  "planContentHash": "b14cb9610acb340cbea5816340bac00b9b37b33f92663e4d0c99c9539eaaec8d",
+  "policyCatalogVersion": "revit-mcp-local-v2",
+  "policyCatalogHash": "1cccdf796f16c278a8b14cc94f5b24b3b4d26a00f4d45135cecf77a4e729f743",
+  "units": "mm",
+  "steps": [
+    {
+      "stepId": "step-levels",
+      "order": 1,
+      "tool": "get_levels_list",
+      "args": {},
+      "dependsOn": [],
+      "mutationClass": "read",
+      "timeoutMs": 30000,
+      "payloadHash": "91ae76958b1979cc6debb449eeb84bc41db1630b965d7be762a75d45b36bbbcc"
+    },
+    {
+      "stepId": "step-wall",
+      "order": 2,
+      "tool": "create_wall",
+      "args": {
+        "levelId": "42",
+        "walls": [
+          {
+            "startPoint": {
+              "x": 0,
+              "y": 0
+            },
+            "endPoint": {
+              "x": 12192,
+              "y": 0
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "step-levels"
+      ],
+      "mutationClass": "mutation",
+      "timeoutMs": 180000,
+      "payloadHash": "bc27eab7b8f23ac6610f793049223d37394e4bfd8dcb2ef219884992b5c46cb7"
+    }
+  ],
+  "createdAt": "2026-07-26T12:00:00.000Z"
+}

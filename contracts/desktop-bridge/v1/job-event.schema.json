@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v1/job-event.json",
+  "title": "Datumm Desktop Job Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "eventId", "jobId", "kind", "severity", "terminal", "timestamp", "message"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "eventId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "kind": {
+      "enum": ["analysis", "plan", "tool", "progress", "warning", "terminal", "confirmation"]
+    },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "terminal": { "type": "boolean" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "message": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "tool": { "type": "string", "maxLength": 128 },
+    "status": { "enum": ["QUEUED", "RUNNING", "AWAITING_USER", "COMPLETED", "FAILED", "CANCELLED", "RECOVERY_REQUIRED"] },
+    "routeGeneration": { "type": "integer", "minimum": 1 },
+    "details": { "type": "object" }
+  }
+}

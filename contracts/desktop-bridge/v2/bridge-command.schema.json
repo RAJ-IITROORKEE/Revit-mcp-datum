@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/bridge-command.json",
+  "title": "Datumm Local Revit Command",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "type", "commandId", "jobId", "runtimeId", "connectionId", "revitInstanceId", "routeGeneration", "leaseEpoch", "stateVersion", "documentFingerprint", "tool", "args", "payloadHash", "deadlineUnixMs", "mutationClass"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "type": { "const": "command" },
+    "commandId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "connectionId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "revitInstanceId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "routeGeneration": { "type": "integer", "minimum": 1 },
+    "leaseEpoch": { "type": "integer", "minimum": 1 },
+    "stateVersion": { "type": "integer", "minimum": 1 },
+    "documentFingerprint": { "type": "string", "minLength": 16, "maxLength": 256 },
+    "tool": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,127}$" },
+    "args": { "type": "object" },
+    "payloadHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "deadlineUnixMs": { "type": "integer", "minimum": 1 },
+    "mutationClass": { "enum": ["read", "mutation", "dangerous"] },
+    "planId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "planRevision": { "type": "integer", "minimum": 1 },
+    "planFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stepId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "executionSnapshotId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "executionSnapshotHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stepAuthorization": { "$ref": "https://contracts.datumm.com/desktop-bridge/v2/step-authorization.json" },
+    "permissionGrant": { "$ref": "https://contracts.datumm.com/desktop-bridge/v2/permission-grant.json" },
+    "idempotencyKey": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "sessionTag": { "type": "string", "minLength": 8, "maxLength": 128 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mutationClass": { "enum": ["mutation", "dangerous"] } }, "required": ["mutationClass"] },
+      "then": { "required": ["idempotencyKey", "sessionTag", "planId", "planRevision", "planFingerprint", "stepId", "executionSnapshotId", "executionSnapshotHash", "stepAuthorization"] }
+    },
+    {
+      "if": { "properties": { "mutationClass": { "const": "dangerous" } }, "required": ["mutationClass"] },
+      "then": { "required": ["permissionGrant"] }
+    }
+  ]
+}

@@ -4,6 +4,12 @@ export const RELAY_SESSION_PREFIX = "dtm_rly_";
 
 export interface RelaySessionPayload {
   connectionId: string;
+  endpointRole?: "mcp-server" | "revit-plugin" | "desktop-bridge";
+  routeGeneration?: number;
+  issuer?: string;
+  audience?: string;
+  jti?: string;
+  notBefore?: string;
   clerkUserId?: string;
   deviceId?: string;
   scopes?: string[];
@@ -55,6 +61,12 @@ function normalizePayload(payload: RelaySessionPayload): RelaySessionPayload {
 
   return {
     connectionId: payload.connectionId.trim(),
+    endpointRole: payload.endpointRole || "revit-plugin",
+    routeGeneration: payload.routeGeneration,
+    issuer: payload.issuer?.trim() || undefined,
+    audience: payload.audience?.trim() || undefined,
+    jti: payload.jti?.trim() || undefined,
+    notBefore: payload.notBefore,
     clerkUserId: payload.clerkUserId?.trim() || undefined,
     deviceId: payload.deviceId?.trim() || undefined,
     scopes,
@@ -71,6 +83,9 @@ export function createRelaySession(payload: RelaySessionPayload, secret = getRel
 
   if (!isValidConnectionId(payload.connectionId)) {
     throw new Error("connectionId is required for relay session");
+  }
+  if (!Array.isArray(payload.scopes) || !payload.scopes.includes("revit:relay")) {
+    throw new Error("revit:relay scope is required for relay session");
   }
 
   const normalized = normalizePayload(payload);
@@ -121,13 +136,31 @@ export function verifyRelaySession(
   if (!isValidConnectionId(payload.connectionId)) {
     return { valid: false, error: "Relay session missing connectionId" };
   }
+  const endpointRole = payload.endpointRole || "revit-plugin";
+  if (endpointRole !== "mcp-server" && endpointRole !== "revit-plugin" && endpointRole !== "desktop-bridge") {
+    return { valid: false, error: "Relay session has invalid endpointRole" };
+  }
+  if (!Array.isArray(payload.scopes) || !payload.scopes.includes("revit:relay")) {
+    return { valid: false, error: "Relay session missing revit:relay scope" };
+  }
 
   const expiresAtMs = Date.parse(String(payload.expiresAt || ""));
   if (!Number.isFinite(expiresAtMs)) return { valid: false, error: "Relay session missing expiresAt" };
   if (expiresAtMs <= now.getTime()) return { valid: false, error: "Relay session expired" };
+  const notBeforeMs = payload.notBefore ? Date.parse(String(payload.notBefore)) : Number.NaN;
+  if (Number.isFinite(notBeforeMs) && notBeforeMs > now.getTime()) return { valid: false, error: "Relay session is not active" };
+  if (typeof payload.routeGeneration !== "undefined" && (!Number.isInteger(payload.routeGeneration) || payload.routeGeneration < 1)) {
+    return { valid: false, error: "Relay session has invalid routeGeneration" };
+  }
 
   const normalized = normalizePayload({
     connectionId: payload.connectionId,
+    endpointRole,
+    routeGeneration: payload.routeGeneration,
+    issuer: payload.issuer,
+    audience: payload.audience,
+    jti: payload.jti,
+    notBefore: payload.notBefore,
     clerkUserId: payload.clerkUserId,
     deviceId: payload.deviceId,
     scopes: payload.scopes,

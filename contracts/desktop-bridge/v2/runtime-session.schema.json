@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/runtime-session.json",
+  "title": "Datumm Local Runtime Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "runtimeId", "desktopDeviceId", "executionHost", "catalogVersion", "catalogHash", "maxFrameBytes", "startedAt"],
+  "properties": {
+    "protocolVersion": { "const": 2 },
+    "runtimeId": { "type": "string", "minLength": 16, "maxLength": 128 },
+    "desktopDeviceId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "executionHost": { "const": "DESKTOP" },
+    "catalogVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "catalogHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "maxFrameBytes": { "type": "integer", "minimum": 65536, "maximum": 8388608 },
+    "sidecarVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "desktopVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "capabilities": {
+      "type": "array",
+      "items": { "enum": ["agent-runtime", "revit-mcp-152", "durable-events", "rich-plan-v1"] },
+      "uniqueItems": true
+    }
+  }
+}

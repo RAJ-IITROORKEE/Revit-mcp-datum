@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "copilot-plan/v1",
+  "id": "plan-3bhk-001",
+  "jobId": "job-01J000000000000000000000",
+  "conversationId": "conversation-01J00000000000000",
+  "revision": 2,
+  "contentHash": "b14cb9610acb340cbea5816340bac00b9b37b33f92663e4d0c99c9539eaaec8d",
+  "fingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+  "executionSnapshotId": "snapshot-01J0000000000000000000",
+  "executionSnapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+  "status": "awaiting_approval",
+  "title": "40 x 50 ft 3BHK with parking",
+  "summary": "A deterministic 3BHK layout with parking, room validation, openings, and quantity summary.",
+  "units": "mm",
+  "assumptions": [
+    "The 40 ft side is treated as the building width."
+  ],
+  "constraints": [
+    "All Revit tool arguments remain in millimeters."
+  ],
+  "warnings": [],
+  "dimensions": {
+    "footprint": {
+      "widthMm": 12192,
+      "heightMm": 15240,
+      "areaSqM": 185.81
+    },
+    "rooms": [
+      {
+        "id": "room-living",
+        "name": "Living",
+        "widthMm": 4267,
+        "heightMm": 4572,
+        "areaSqM": 19.51
+      }
+    ]
+  },
+  "phases": [
+    {
+      "id": "phase-context",
+      "title": "Resolve model context",
+      "order": 1,
+      "status": "pending",
+      "stepIds": [
+        "step-levels"
+      ]
+    },
+    {
+      "id": "phase-shell",
+      "title": "Create building shell",
+      "order": 2,
+      "status": "pending",
+      "stepIds": [
+        "step-wall"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-levels",
+      "phaseId": "phase-context",
+      "order": 1,
+      "kind": "observe",
+      "title": "Resolve target level",
+      "toolName": "get_levels_list",
+      "sanitizedArgs": {},
+      "dependsOn": [],
+      "expectedOutcome": "A numeric target level ID",
+      "status": "pending"
+    },
+    {
+      "id": "step-wall",
+      "phaseId": "phase-shell",
+      "order": 2,
+      "kind": "mutate",
+      "title": "Create exterior walls",
+      "toolName": "create_wall",
+      "sanitizedArgs": {
+        "wallCount": 4,
+        "heightMm": 3000
+      },
+      "dependsOn": [
+        "step-levels"
+      ],
+      "expectedOutcome": "Four exterior wall element IDs",
+      "status": "pending"
+    }
+  ],
+  "boq": [
+    {
+      "id": "boq-wall",
+      "category": "Architecture",
+      "item": "Exterior walls",
+      "unit": "m",
+      "quantity": 54.864,
+      "sourceStepIds": [
+        "step-wall"
+      ],
+      "estimated": true
+    }
+  ],
+  "diagram": {
+    "widthMm": 12192,
+    "heightMm": 15240,
+    "rooms": [
+      {
+        "id": "room-living",
+        "name": "Living",
+        "xMm": 0,
+        "yMm": 0,
+        "widthMm": 4267,
+        "heightMm": 4572
+      }
+    ],
+    "walls": [
+      {
+        "id": "wall-south",
+        "start": {
+          "xMm": 0,
+          "yMm": 0
+        },
+        "end": {
+          "xMm": 12192,
+          "yMm": 0
+        },
+        "thicknessMm": 200
+      }
+    ],
+    "openings": [
+      {
+        "id": "door-entry",
+        "type": "door",
+        "wallId": "wall-south",
+        "position": 0.5,
+        "widthMm": 1000
+      }
+    ]
+  },
+  "capabilities": {
+    "canApprove": true,
+    "canRevise": true,
+    "canEdit": true,
+    "canCancel": true
+  },
+  "createdAt": "2026-07-26T12:00:00.000Z",
+  "updatedAt": "2026-07-26T12:02:00.000Z"
+}

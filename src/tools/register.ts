@@ -18,8 +18,11 @@ export async function registerTools(server: McpServer) {
       file !== "index.ts" &&
       file !== "index.js" &&
       file !== "register.ts" &&
-      file !== "register.js"
-  );
+      file !== "register.js" &&
+      !file.endsWith(".test.ts") &&
+      !file.endsWith(".test.js") &&
+      !file.startsWith("_")
+  ).sort();
 
   // Dynamically import and register each tool
   for (const file of toolFiles) {

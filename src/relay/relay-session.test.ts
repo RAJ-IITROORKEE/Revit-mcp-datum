@@ -13,6 +13,7 @@ const expiresAt = new Date(now.getTime() + 60_000).toISOString();
 const token = createRelaySession(
   {
     connectionId: "conn_123",
+    endpointRole: "revit-plugin",
     clerkUserId: "user_123",
     deviceId: "device_123",
     scopes: ["revit:relay"],
@@ -38,7 +39,25 @@ assert.equal(wrongSecret.valid, false);
 const expired = verifyRelaySession(token, secret, new Date(Date.parse(expiresAt) + 1));
 assert.equal(expired.valid, false);
 
+const notYetActive = createRelaySession({
+  connectionId: "conn_123",
+  endpointRole: "desktop-bridge",
+  scopes: ["revit:relay"],
+  issuedAt: now.toISOString(),
+  notBefore: new Date(now.getTime() + 60_000).toISOString(),
+  expiresAt,
+}, secret);
+assert.equal(verifyRelaySession(notYetActive, secret, now).valid, false);
+
+assert.throws(() => createRelaySession({
+  connectionId: "conn_123",
+  endpointRole: "revit-plugin",
+  scopes: [],
+  issuedAt: now.toISOString(),
+  expiresAt,
+}, secret));
+
 const tampered = `${token.slice(0, -1)}x`;
 assert.equal(verifyRelaySession(tampered, secret, now).valid, false);
 
-assert.throws(() => createRelaySession({ connectionId: "", issuedAt: now.toISOString(), expiresAt }, secret));
+assert.throws(() => createRelaySession({ connectionId: "", endpointRole: "revit-plugin", issuedAt: now.toISOString(), expiresAt }, secret));

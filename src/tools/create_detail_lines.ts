@@ -1,6 +1,30 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { withRevitConnection } from "../utils/ConnectionManager.js";
+import { normalizedMutationToolResult, normalizedToolCatch } from "./_result.js";
+
+const detailPointSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  z: z.number(),
+});
+
+const detailLineSchema = z.union([
+  z.object({
+    start: detailPointSchema,
+    end: detailPointSchema,
+    lineStyleName: z.string().optional(),
+  }),
+  z.object({
+    startPoint: detailPointSchema,
+    endPoint: detailPointSchema,
+    lineStyleName: z.string().optional(),
+  }).transform(({ startPoint, endPoint, lineStyleName }) => ({
+    start: startPoint,
+    end: endPoint,
+    ...(lineStyleName === undefined ? {} : { lineStyleName }),
+  })),
+]);
 
 export function registerCreateDetailLinesTool(server: McpServer) {
   server.tool(
@@ -12,24 +36,9 @@ export function registerCreateDetailLinesTool(server: McpServer) {
         .describe("ElementId of the view where detail lines will be placed"),
       lines: z
         .array(
-          z.object({
-            startPoint: z.object({
-              x: z.number().describe("X coordinate of start point in mm"),
-              y: z.number().describe("Y coordinate of start point in mm"),
-              z: z.number().describe("Z coordinate of start point in mm"),
-            }),
-            endPoint: z.object({
-              x: z.number().describe("X coordinate of end point in mm"),
-              y: z.number().describe("Y coordinate of end point in mm"),
-              z: z.number().describe("Z coordinate of end point in mm"),
-            }),
-            lineStyleName: z
-              .string()
-              .optional()
-              .describe("Name of line style (e.g., 'Thin Lines', 'Medium Lines', 'Wide Lines', 'Hidden [1/16\"]', 'Centerline'). Uses default if not specified."),
-          })
+          detailLineSchema
         )
-        .describe("Array of lines to create"),
+        .describe("Array of handler-native start/end lines. Legacy startPoint/endPoint is normalized."),
     },
     async (args, extra) => {
       const params = args;
@@ -39,25 +48,9 @@ export function registerCreateDetailLinesTool(server: McpServer) {
           return await revitClient.sendCommand("create_detail_lines", params);
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return normalizedMutationToolResult("create_detail_lines", response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Create detail lines failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-        };
+        return normalizedToolCatch("create_detail_lines", error);
       }
     }
   );
