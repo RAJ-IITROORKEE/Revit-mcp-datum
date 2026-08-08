@@ -33,8 +33,8 @@ import {
   generatePairingToken,
   isValidPairingToken,
 } from "./types.js";
-import { verifyRelaySession } from "./relay-session.js";
 import { claimRouteOwner, createRouteBinding, isCurrentRouteOwner, releaseRouteOwner, type RouteBinding } from "./route-ownership.js";
+import { requireRelayCommandDispatchEnabled, requireRelaySessionAuthorizationEnabled } from "./relay-dispatch-gate.js";
 import { logWebSocketEvent, logError } from "../utils/Logger.js";
 
 // ─── Configuration ───────────────────────────────────────────────────────────
@@ -260,23 +260,11 @@ function validateToken(token: string): boolean {
 function resolveRegisterRouteKey(payload: RegisterPayload): { routeKey: string; mode: "session" | "legacy"; scopes: string[]; error?: never } | { error: string } {
   const relaySession = typeof payload.relaySession === "string" ? payload.relaySession.trim() : "";
   if (relaySession) {
-    const verification = verifyRelaySession(relaySession);
-    if (!verification.valid) return { error: verification.error };
-    if (payload.connectionId && payload.connectionId !== verification.session.payload.connectionId) {
-      return { error: "Relay session connectionId mismatch" };
+    try {
+      requireRelaySessionAuthorizationEnabled();
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Relay session authorization is disabled" };
     }
-    const expectedRole = payload.clientType === "mcp-server" ? "mcp-server" : "revit-plugin";
-    const sessionRole = verification.session.payload.endpointRole;
-    if (sessionRole !== expectedRole && sessionRole !== "desktop-bridge") {
-      return { error: "Relay session endpoint role mismatch" };
-    }
-    if (!verification.session.payload.scopes?.includes("revit:relay")) {
-      return { error: "Relay session does not grant relay access" };
-    }
-    if (!tokenToClients.has(verification.session.routeKey)) {
-      tokenToClients.set(verification.session.routeKey, {});
-    }
-    return { routeKey: verification.session.routeKey, mode: "session", scopes: verification.session.payload.scopes || [] };
   }
 
   const pairingToken = typeof payload.pairingToken === "string" ? payload.pairingToken.trim() : "";
@@ -497,26 +485,34 @@ function handleRegister(
 }
 
 function handleCommand(client: ConnectedClient, message: RelayMessage) {
+  try {
+    requireRelayCommandDispatchEnabled();
+  } catch (error) {
+    sendError(client.ws, message.id, RelayErrorCodes.UNAUTHORIZED, error instanceof Error ? error.message : "Relay command dispatch is disabled");
+    return;
+  }
   const payload = message.payload as CommandPayload;
   
   // Find paired Revit plugin
   const tokenClients = tokenToClients.get(client.pairingToken);
-  if (!tokenClients?.revit) {
+  const revitClientId = tokenClients?.revit;
+  if (typeof revitClientId !== "string") {
     sendError(client.ws, message.id, RelayErrorCodes.NO_PAIRED_CLIENT, "No Revit plugin connected");
     return;
   }
 
-  const revitClient = clients.get(tokenClients.revit);
-  if (!revitClient) {
+  const candidateRevitClient = clients.get(revitClientId as string);
+  if (candidateRevitClient === undefined) {
     sendError(client.ws, message.id, RelayErrorCodes.CLIENT_DISCONNECTED, "Revit plugin disconnected");
     return;
   }
+  const activeRevitClient = candidateRevitClient as ConnectedClient;
 
-  console.log(`[Relay] Routing command: ${payload.command} from ${client.id} to ${revitClient.id}`);
+  console.log(`[Relay] Routing command: ${payload.command} from ${client.id} to ${activeRevitClient.id}`);
 
   // Forward command to Revit plugin
   const commandMessage = createMessage("command", payload, message.id);
-  send(revitClient.ws, commandMessage);
+  send(activeRevitClient.ws, commandMessage);
 
   // Track pending command for response routing
   const timeout = setTimeout(() => {
@@ -534,8 +530,8 @@ function handleCommand(client: ConnectedClient, message: RelayMessage) {
     reject: () => {},
     timeout,
     routeKey: client.pairingToken,
-    endpointClientId: revitClient.id,
-    routeGeneration: revitClient.routeGeneration,
+    endpointClientId: activeRevitClient.id,
+    routeGeneration: activeRevitClient.routeGeneration,
   });
 }
 
@@ -545,7 +541,11 @@ function handleResponse(client: ConnectedClient, message: RelayMessage) {
   // Primary path: resolve a Promise from sendCommandViaToken() (no WS self-connection needed)
   const directHandler = directPending.get(message.id);
   if (directHandler) {
-    if (!isCurrentRouteOwner(routeBindings.get(directHandler.routeKey), "revit-plugin", client.id, directHandler.routeGeneration)) {
+    if (
+      client.pairingToken !== directHandler.routeKey ||
+      client.routeGeneration !== directHandler.routeGeneration ||
+      !isCurrentRouteOwner(routeBindings.get(directHandler.routeKey), "revit-plugin", client.id, client.routeGeneration)
+    ) {
       clearTimeout(directHandler.timeout);
       directPending.delete(message.id);
       directHandler.reject(new Error("Stale relay route response"));
@@ -634,7 +634,7 @@ function handleDisconnect(client: ConnectedClient) {
 
   // Notify paired client
   const pairedClientId = client.type === "revit-plugin" ? tokenClients?.mcp : tokenClients?.revit;
-  if (pairedClientId) {
+  if (released && pairedClientId) {
     const pairedClient = clients.get(pairedClientId);
     if (pairedClient) {
       const statusPayload: StatusPayload = {
@@ -719,8 +719,10 @@ export async function sendCommandViaToken(
   params: unknown,
   timeoutMs = 300000
 ): Promise<unknown> {
+  requireRelayCommandDispatchEnabled();
   const tokenClients = tokenToClients.get(token);
-  if (!tokenClients?.revit) {
+  const revitClientId = tokenClients?.revit;
+  if (typeof revitClientId !== "string") {
     throw new Error(
       "No registered Revit WebSocket client for this selected Datum connection. " +
       "Open Revit > Revit MCP Plugin > Settings, confirm the plugin API key, " +
@@ -728,14 +730,18 @@ export async function sendCommandViaToken(
     );
   }
 
-  const revitClient = clients.get(tokenClients.revit);
-  if (!revitClient || revitClient.ws.readyState !== WebSocket.OPEN) {
+  const candidateRevitClient = clients.get(revitClientId as string);
+  if (candidateRevitClient === undefined) {
+    throw new Error("Revit plugin WebSocket is not open. Waiting for reconnection.");
+  }
+  const activeRevitClient = candidateRevitClient as ConnectedClient;
+  if (activeRevitClient.ws.readyState !== WebSocket.OPEN) {
     throw new Error("Revit plugin WebSocket is not open. Waiting for reconnection.");
   }
 
   const messageId = generateMessageId();
   const routeBinding = routeBindings.get(token);
-  if (!routeBinding || !isCurrentRouteOwner(routeBinding, "revit-plugin", revitClient.id, revitClient.routeGeneration)) {
+  if (!routeBinding || !isCurrentRouteOwner(routeBinding, "revit-plugin", activeRevitClient.id, activeRevitClient.routeGeneration)) {
     throw new Error("Revit relay route is stale. Waiting for the current endpoint.");
   }
 
@@ -750,20 +756,20 @@ export async function sendCommandViaToken(
       reject,
       timeout,
       routeKey: token,
-      endpointClientId: revitClient.id,
-      routeGeneration: revitClient.routeGeneration,
+      endpointClientId: activeRevitClient.id,
+      routeGeneration: activeRevitClient.routeGeneration,
     });
 
     const payload: CommandPayload = { command, params, timeout: timeoutMs };
     const commandMessage = createMessage("command", payload, messageId);
-    revitClient.ws.send(JSON.stringify(commandMessage), (error) => {
+    activeRevitClient.ws.send(JSON.stringify(commandMessage), (error) => {
       if (!error) return;
       clearTimeout(timeout);
       directPending.delete(messageId);
       reject(error);
     });
 
-    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${revitClient.id} (msgId=${messageId}, timeoutMs=${timeoutMs})`);
+    console.log(`[Relay] sendCommandViaToken: ${command} → revit client ${activeRevitClient.id} (msgId=${messageId}, timeoutMs=${timeoutMs})`);
   });
 }
 
