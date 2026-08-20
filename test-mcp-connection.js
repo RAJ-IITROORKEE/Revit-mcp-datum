@@ -1,6 +1,12 @@
 // Test MCP connection from Claude Desktop perspective
 import https from 'https';
 
+const mcpCredential = (process.env.MCP_API_KEY || '').trim();
+if (!mcpCredential) {
+  console.error('MCP_API_KEY is required; refusing to start.');
+  process.exit(1);
+}
+
 const options = {
   hostname: 'revit-mcp-datum-production.up.railway.app',
   port: 443,
@@ -9,7 +15,7 @@ const options = {
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json, text/event-stream',
-    'Authorization': 'Bearer c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d'
+    'Authorization': `Bearer ${mcpCredential}`
   }
 };
 

@@ -4,7 +4,7 @@
   "title": "Datumm Local Tool Policy Manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocolVersion", "catalogVersion", "catalogHash", "localToolCount", "excludedCloudTools", "tools"],
+  "required": ["protocolVersion", "catalogVersion", "catalogHash", "localToolCount", "excludedCloudTools", "prohibitedLlmTools", "tools"],
   "properties": {
     "protocolVersion": { "const": 2 },
     "catalogVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
@@ -15,6 +15,13 @@
       "minItems": 3,
       "maxItems": 3,
       "items": { "enum": ["query_stored_data", "store_project_data", "store_room_data"] },
+      "uniqueItems": true
+    },
+    "prohibitedLlmTools": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "contains": { "const": "send_code_to_revit" },
       "uniqueItems": true
     },
     "tools": {

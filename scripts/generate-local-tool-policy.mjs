@@ -5,6 +5,15 @@ import { registerTools } from "../build/tools/register.js";
 import { catalogHash } from "./local-runtime-canonical.mjs";
 
 const cloudOnlyTools = new Set(["query_stored_data", "store_project_data", "store_room_data"]);
+const prohibitedLlmTools = new Set(["send_code_to_revit"]);
+const sessionTagTools = new Set([
+  "create_ceiling",
+  "create_floor",
+  "create_room",
+  "create_wall",
+  "delete_elements",
+  "place_component"
+]);
 const readTools = new Set([
   "ai_element_filter",
   "analyze_layout_design",
@@ -114,7 +123,7 @@ const tools = names.map((name) => {
     retryPolicy: mutationClass === "read" ? "read_only" : "never",
     timeoutMs: name === "place_component" ? 300000 : mutationClass === "read" ? 30000 : 180000,
     createdIdsRequired: createdIdsRequiredTools.has(name),
-    sessionTagSupported: false,
+    sessionTagSupported: sessionTagTools.has(name),
     automaticRollbackAllowed: false,
     maxArgsBytes: 1048576,
     maxResultBytes: 4194304
@@ -127,6 +136,7 @@ const manifest = {
   catalogHash: hash,
   localToolCount: 152,
   excludedCloudTools: [...cloudOnlyTools].sort(),
+  prohibitedLlmTools: [...prohibitedLlmTools].sort(),
   tools
 };
 

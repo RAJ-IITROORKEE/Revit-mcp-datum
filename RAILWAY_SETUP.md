@@ -20,7 +20,7 @@ git push origin main
 In Railway dashboard, go to **Variables** and add:
 
 ```env
-MCP_API_KEY=c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 MCP_PORT=3000
 MCP_HOST=0.0.0.0
 NODE_ENV=production
@@ -53,7 +53,7 @@ Use your Railway domain in Claude Desktop:
       "transport": {
         "type": "http",
         "headers": {
-          "Authorization": "Bearer c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d"
+          "Authorization": "Bearer YOUR_MCP_API_KEY"
         }
       }
     }

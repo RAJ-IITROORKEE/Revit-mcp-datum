@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'revit-mcp-secure',
-    script: './server-secure.js',
+    script: './server-secure.cjs',
     instances: 1,
     exec_mode: 'fork',
     watch: false,

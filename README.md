@@ -114,11 +114,11 @@ Get your API key from the `.env` file created by setup script.
 
 ```bash
 # Option 1: Direct
-node server-secure.js
+node server-secure.cjs
 
 # Option 2: PM2 (Recommended)
 npm install -g pm2
-pm2 start ecosystem-secure.config.js
+pm2 start ecosystem-secure.config.cjs
 pm2 logs revit-mcp-secure
 ```
 

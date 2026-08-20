@@ -1,8 +1,8 @@
 # Revit MCP Tool Registration Status
 
-**Last Updated:** February 14, 2026  
-**Total Tools Registered:** 154  
-**Registration Success Rate:** 100% (0 warnings)
+> **Historical/superseded:** This document records tool registration status as of February 14, 2026 with 154 tools. Authoritative counts are 155 source registrations, 152 Revit-backed inventory entries, 151 maximum LLM-visible. `send_code_to_revit` is permanently prohibited from all LLM-accessible profiles. `contracts/desktop-bridge/v2/tool-policy-manifest.json` is the authoritative catalog.
+
+**Last Updated:** February 14, 2026 (historical record — superseded)
 
 ---
 

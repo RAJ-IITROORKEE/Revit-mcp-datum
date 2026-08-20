@@ -24,7 +24,9 @@ import {
   ensureTokenRegistered,
   getConnectedClients, 
   getPairingTokens,
+  isMcpRelayEndpointRole,
   relayTokenStorage,
+  verifyRelaySession,
 } from "./relay/index.js";
 import logger, { logToolCall, logWebSocketEvent, logServerStartup, logHealthCheck, logError } from "./utils/Logger.js";
 
@@ -32,7 +34,10 @@ import logger, { logToolCall, logWebSocketEvent, logServerStartup, logHealthChec
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || process.env.MCP_HOST || "0.0.0.0";
-const API_KEY = (process.env.MCP_API_KEY || "").trim();
+const mcpCredential = (process.env.MCP_API_KEY || "").trim();
+if (!mcpCredential) {
+  throw new Error("MCP_API_KEY is required; refusing to start.");
+}
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 // Railway server timeouts (5 minutes + grace periods)
@@ -47,6 +52,12 @@ interface Session {
   server: McpServer;
   createdAt: Date;
 }
+
+type ToolCatalogItem = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+};
 
 const sessions: Map<string, Session> = new Map();
 
@@ -105,6 +116,34 @@ function getSessionId(req: Request): string | undefined {
   return undefined;
 }
 
+function getHeaderValue(req: Request, name: string): string {
+  const value = req.headers[name.toLowerCase()];
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0].trim();
+  return "";
+}
+
+function getRelayRouteFromHeaders(req: Request):
+  | { routeKey: string; credentialType: "session" | "legacy-token" }
+  | { error: string } {
+  const relaySession = getHeaderValue(req, "x-relay-session");
+  if (relaySession) {
+    const verification = verifyRelaySession(relaySession);
+    if (!verification.valid) return { error: verification.error };
+    if (!isMcpRelayEndpointRole(verification.session.payload.endpointRole)) {
+      return { error: "Relay session endpoint role mismatch" };
+    }
+    return { routeKey: verification.session.routeKey, credentialType: "session" };
+  }
+
+  const relayToken = getHeaderValue(req, "x-relay-token");
+  if (!relayToken) return { routeKey: "", credentialType: "legacy-token" };
+
+  const tokenInfo = getTokenInfo(relayToken);
+  if (!tokenInfo) return { error: "Invalid or expired relay token" };
+  return { routeKey: relayToken, credentialType: "legacy-token" };
+}
+
 // ─── MCP Server Factory ─────────────────────────────────────────────────────
 
 async function createMcpServer(): Promise<McpServer> {
@@ -124,17 +163,25 @@ async function createMcpServer(): Promise<McpServer> {
   return server;
 }
 
-async function handleStatelessRequest(req: Request, res: Response): Promise<void> {
-  const body = req.body as { id?: string | number | null; method?: string } | undefined;
-
-  if (body?.method === "tools/list") {
-    const server = await createMcpServer();
-    const toolRegistry = (server as any)._registeredTools || {};
-    const tools = Object.keys(toolRegistry).map((name) => ({
+async function getToolCatalog(): Promise<ToolCatalogItem[]> {
+  const server = await createMcpServer();
+  // MCP SDK keeps registered tools on a private field; this server already reads
+  // it for health/tool-count, so reuse the same source for REST catalog endpoints.
+  const toolRegistry = (server as any)._registeredTools || {};
+  return Object.keys(toolRegistry)
+    .sort((a, b) => a.localeCompare(b))
+    .map((name) => ({
       name,
       description: toolRegistry[name]?.description || "",
       inputSchema: toolRegistry[name]?.inputSchema || { type: "object", properties: {} },
     }));
+}
+
+async function handleStatelessRequest(req: Request, res: Response): Promise<void> {
+  const body = req.body as { id?: string | number | null; method?: string } | undefined;
+
+  if (body?.method === "tools/list") {
+    const tools = await getToolCatalog();
 
     res.status(200).json({
       jsonrpc: "2.0",
@@ -169,7 +216,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-API-Key, Mcp-Session-Id"
+    "Content-Type, Authorization, X-API-Key, Mcp-Session-Id, X-Relay-Token, X-Relay-Session"
   );
   res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
   next();
@@ -181,22 +228,17 @@ app.options("/{*path}", (_req: Request, res: Response) => {
 
 // Auth Middleware
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  if (!API_KEY) {
-    next();
-    return;
-  }
-
   const authHeader = req.headers.authorization || "";
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
-    if (token === API_KEY) {
+    if (token === mcpCredential) {
       next();
       return;
     }
   }
 
   const apiKeyHeader = req.headers["x-api-key"];
-  if (typeof apiKeyHeader === "string" && apiKeyHeader === API_KEY) {
+  if (typeof apiKeyHeader === "string" && apiKeyHeader === mcpCredential) {
     next();
     return;
   }
@@ -252,16 +294,59 @@ app.get("/status", authMiddleware, (_req: Request, res: Response) => {
     service: "revit-mcp-combined",
     version: "1.0.0",
     mcpSessions: sessions.size,
-    relayClients: getConnectedClients(),
-    pairingTokens: getPairingTokens().map(t => ({
-      token: t.token,
-      expiresAt: t.expiresAt,
-      hasRevit: !!t.revitClientId,
-      hasMcp: !!t.mcpClientId,
-    })),
+    relayClientCount: getConnectedClients().length,
+    pairingTokenCount: getPairingTokens().length,
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get("/tools", authMiddleware, async (_req: Request, res: Response) => {
+  try {
+    const tools = await getToolCatalog();
+    res.json({
+      success: true,
+      message: "Tools listed",
+      data: { tools },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error({ error: message }, "Failed to list tool catalog");
+    res.status(500).json({
+      success: false,
+      message: "Failed to list tools",
+      error: { code: "TOOLS_LIST_FAILED", details: message },
+    });
+  }
+});
+
+app.get("/tools/:name/schema", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const tools = await getToolCatalog();
+    const tool = tools.find((item) => item.name === req.params.name);
+    if (!tool) {
+      res.status(404).json({
+        success: false,
+        message: "Tool not found",
+        error: { code: "TOOL_NOT_FOUND", details: { name: req.params.name } },
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Tool schema loaded",
+      data: tool,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error({ error: message, toolName: req.params.name }, "Failed to load tool schema");
+    res.status(500).json({
+      success: false,
+      message: "Failed to load tool schema",
+      error: { code: "TOOL_SCHEMA_FAILED", details: message },
+    });
+  }
 });
 
 // ─── Relay Token Endpoints ───────────────────────────────────────────────────
@@ -275,6 +360,15 @@ app.post("/api/relay/token", authMiddleware, async (req: Request, res: Response)
     token: token.token,
     expiresAt: token.expiresAt.toISOString(),
     websocketUrl,
+  });
+});
+
+app.post("/api/relay/session", authMiddleware, (_req: Request, res: Response) => {
+  res.status(503).json({
+    error: {
+      code: "RELAY_SESSION_UNAVAILABLE",
+      message: "Relay session creation is unavailable.",
+    },
   });
 });
 
@@ -302,8 +396,24 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
 // Validate and re-register an existing token (used by Revit plugin after Railway restart).
 // If the server restarted and lost in-memory state, this re-creates the token entry so
 // both Revit and Datum can resume using the same token without user intervention.
-app.post("/api/relay/validate-and-register", async (req: Request, res: Response) => {
-  const { token } = req.body as { token?: string };
+app.post("/api/relay/validate-and-register", authMiddleware, async (req: Request, res: Response) => {
+  const { token, relaySession } = req.body as { token?: string; relaySession?: string };
+  if (typeof relaySession === "string" && relaySession.trim()) {
+    const verification = verifyRelaySession(relaySession);
+    if (!verification.valid) {
+      res.status(400).json({ error: verification.error });
+      return;
+    }
+
+    res.json({
+      connectionId: verification.session.payload.connectionId,
+      expiresAt: verification.session.payload.expiresAt,
+      websocketUrl: getRelayWebSocketUrl(req),
+      reregistered: false,
+    });
+    return;
+  }
+
   if (!token || typeof token !== "string") {
     res.status(400).json({ error: "Missing or invalid token in request body" });
     return;
@@ -339,37 +449,27 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
   const inputSummary = summarizeToolArgs(req.body);
   
   try {
-    // Extract relay token from header — Datum sends this to identify the user's Revit session.
-    const relayTokenHeader = req.headers["x-relay-token"];
-    const relayToken = typeof relayTokenHeader === "string"
-      ? relayTokenHeader.trim()
-      : Array.isArray(relayTokenHeader)
-        ? String(relayTokenHeader[0] || "").trim()
-        : "";
-
-    if (relayToken) {
-      const tokenInfo = getTokenInfo(relayToken);
-      if (!tokenInfo) {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: { code: -32001, message: "Invalid or expired relay token" },
-          id: req.body?.id ?? null,
-        });
-        logToolCall({
-          toolName,
-          userId,
-          durationMs: Date.now() - startTime,
-          success: false,
-          transport: "relay",
-          error: "Invalid or expired relay token",
-        });
-        return;
-      }
+    const relayRoute = getRelayRouteFromHeaders(req);
+    if ("error" in relayRoute) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: { code: -32001, message: relayRoute.error },
+        id: req.body?.id ?? null,
+      });
+      logToolCall({
+        toolName,
+        userId,
+        durationMs: Date.now() - startTime,
+        success: false,
+        transport: "relay",
+        error: relayRoute.error,
+      });
+      return;
     }
 
-    // Thread the relay token through the MCP tool execution chain via AsyncLocalStorage.
+    // Thread the relay route key through the MCP tool execution chain via AsyncLocalStorage.
     // ConnectionManager.withRevitConnection() reads it from getRelayToken() — no global state.
-    await relayTokenStorage.run(relayToken, async () => {
+    await relayTokenStorage.run(relayRoute.routeKey, async () => {
       const sessionId = getSessionId(req);
 
       if (toolName !== "unknown") {
@@ -378,7 +478,8 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
             event: "mcp_request_start",
             toolName,
             sessionId: sessionId || null,
-            hasRelayToken: Boolean(relayToken),
+            hasRelayCredential: Boolean(relayRoute.routeKey),
+            relayCredentialType: relayRoute.routeKey ? relayRoute.credentialType : null,
             inputSummary,
           },
           `MCP request start: ${toolName}`
@@ -395,7 +496,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
              userId,
             durationMs: Date.now() - startTime,
             success: true,
-            transport: relayToken ? "relay" : "direct",
+            transport: relayRoute.routeKey ? "relay" : "direct",
             inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
           });
          }
@@ -439,7 +540,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
              userId,
               durationMs: Date.now() - startTime,
               success: true,
-              transport: relayToken ? "relay" : "direct",
+               transport: relayRoute.routeKey ? "relay" : "direct",
               inputSummary: inputSummary ? JSON.stringify(inputSummary) : undefined,
             });
          }
@@ -545,7 +646,7 @@ async function start() {
     console.log(`  Relay WS:    ws://${HOST}:${PORT}/relay`);
     console.log(`  Health:      http://${HOST}:${PORT}/health`);
     console.log(`  New Token:   POST http://${HOST}:${PORT}/api/relay/token`);
-    console.log(`  Auth:        ${API_KEY ? "ENABLED" : "DISABLED"}`);
+    console.log(`  Auth:        ${mcpCredential ? "ENABLED" : "DISABLED (development only)"}`);
     console.log(`  Env:         ${NODE_ENV}`);
     console.log(`  Timeout:     ${SERVER_TIMEOUT_MS}ms`);
     console.log("═══════════════════════════════════════════════════════════");

@@ -1,0 +1,24 @@
+{
+  "schema": "datumm.revit.verify-only-canary-artifact/v1",
+  "mode": "VERIFY_ONLY",
+  "profileId": "local-revit-readonly-v3",
+  "entrypoint": "datumm-revit-canary-verify-only.mjs",
+  "dispatchAvailable": false,
+  "readEnabled": false,
+  "files": [
+    {
+      "path": "datumm-revit-canary-verify-only.mjs",
+      "size": 72868,
+      "sha256": "8191c3ab343c17c20a39f4095c092428e62a1e63d0cb11b9f93281ca706b2ecc"
+    },
+    {
+      "path": "package.json",
+      "size": 200,
+      "sha256": "8017c230994074eec044d81b2afc5866cc5782447bea23700ee430a4d9b2af13"
+    }
+  ],
+  "pinnedTrustRoot": {
+    "size": 339,
+    "sha256": "e57fdd12894fd90abfd8a2289f8858c08840bcf975134fa73b035fd9e222751c"
+  }
+}

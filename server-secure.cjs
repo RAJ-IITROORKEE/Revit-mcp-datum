@@ -10,7 +10,7 @@ const PORT = process.env.PORT || process.env.MCP_PORT || 3000;
 const CERT_PATH = process.env.CERT_PATH || './certs/server.crt';
 const KEY_PATH = process.env.KEY_PATH || './certs/server.key';
 const HOST = process.env.MCP_HOST || '0.0.0.0'; // Railway needs 0.0.0.0
-const API_KEY = process.env.MCP_API_KEY || '';
+const mcpCredential = process.env.MCP_API_KEY || '';
 const ENABLE_IP_WHITELIST = process.env.ENABLE_IP_WHITELIST === 'true';
 const WHITELIST_IPS = process.env.WHITELIST_IPS ? process.env.WHITELIST_IPS.split(',').map(ip => ip.trim()) : [];
 const ENABLE_RATE_LIMIT = process.env.ENABLE_RATE_LIMIT === 'true';
@@ -18,9 +18,9 @@ const RATE_LIMIT_REQUESTS = parseInt(process.env.RATE_LIMIT_REQUESTS || '100');
 const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW || '60000'); // 1 minute
 
 // Security checks
-if (!API_KEY || API_KEY.length < 32) {
-  console.error('[SECURITY WARNING] MCP_API_KEY not set or too short! Set a strong API key (32+ chars)');
-  console.error('[SECURITY WARNING] Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+if (!mcpCredential || mcpCredential.length < 32) {
+  console.error('[SECURITY] MCP_API_KEY is required and must be at least 32 characters; refusing to start.');
+  process.exit(1);
 }
 
 // Verify certificate files exist
@@ -44,7 +44,7 @@ const options = {
 console.log('[MCP Server] Starting Revit MCP Server (Secure Mode)...');
 console.log(`[MCP Server] Port: ${PORT}, Host: ${HOST}`);
 console.log(`[MCP Server] Certificate: ${CERT_PATH}`);
-console.log(`[MCP Server] API Key Authentication: ${API_KEY ? 'ENABLED' : 'DISABLED - WARNING!'}`);
+console.log(`[MCP Server] API Key Authentication: ${mcpCredential ? 'ENABLED' : 'DISABLED - WARNING!'}`);
 console.log(`[MCP Server] IP Whitelist: ${ENABLE_IP_WHITELIST ? 'ENABLED' : 'DISABLED'}`);
 console.log(`[MCP Server] Rate Limiting: ${ENABLE_RATE_LIMIT ? 'ENABLED' : 'DISABLED'}`);
 
@@ -85,7 +85,7 @@ function checkRateLimit(clientIp) {
  * Verify API Key from request
  */
 function verifyApiKey(req) {
-  if (!API_KEY) {
+  if (!mcpCredential) {
     // If no API key configured, reject all requests
     return false;
   }
@@ -94,13 +94,13 @@ function verifyApiKey(req) {
   const authHeader = req.headers.authorization || '';
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(API_KEY));
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(mcpCredential));
   }
 
   // Check X-API-Key header
   const apiKey = req.headers['x-api-key'] || '';
   if (apiKey) {
-    return crypto.timingSafeEqual(Buffer.from(apiKey), Buffer.from(API_KEY));
+    return crypto.timingSafeEqual(Buffer.from(apiKey), Buffer.from(mcpCredential));
   }
 
   return false;

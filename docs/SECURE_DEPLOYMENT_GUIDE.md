@@ -57,7 +57,7 @@ This will:
 
 4. **Start secure server**
    ```bash
-   pm2 start ecosystem-secure.config.js --name revit-mcp-secure
+   pm2 start ecosystem-secure.config.cjs --name revit-mcp-secure
    ```
 
 5. **Update Claude config**
@@ -81,16 +81,16 @@ This will:
 **Setup:**
 ```env
 MCP_HOST=127.0.0.1
-MCP_API_KEY=your-random-key
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=false
 ENABLE_RATE_LIMIT=true
 ```
 
 **Start:**
 ```bash
-node server-secure.js
+node server-secure.cjs
 # or
-pm2 start ecosystem-secure.config.js
+pm2 start ecosystem-secure.config.cjs
 ```
 
 **Claude Config:**
@@ -113,7 +113,7 @@ pm2 start ecosystem-secure.config.js
 ```env
 MCP_HOST=192.168.1.100      # Your office IP
 MCP_PORT=3000
-MCP_API_KEY=your-strong-key
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=192.168.1.0/24, 10.0.0.100
 ENABLE_RATE_LIMIT=true
@@ -137,7 +137,7 @@ Office Network (192.168.1.x)
 **Setup:**
 ```env
 MCP_HOST=127.0.0.1              # VPN/Bastion only
-MCP_API_KEY=rotate-monthly
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=vpn-gateway-ip
 ENABLE_RATE_LIMIT=true
@@ -174,7 +174,7 @@ Remote Desktop
 **Setup:**
 ```env
 MCP_HOST=127.0.0.1              # Behind load balancer only
-MCP_API_KEY=use-secrets-manager-integration
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=corporate-load-balancer-ip
 ENABLE_RATE_LIMIT=true
@@ -212,7 +212,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 **Option 1: Environment Variable (.env - LOCAL ONLY)**
 ```env
-MCP_API_KEY=your-super-secret-key
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ```
 
 **Option 2: Secrets Manager (AWS/Azure/GCP)**
@@ -220,7 +220,7 @@ MCP_API_KEY=your-super-secret-key
 // Load from secrets manager instead of env
 const AWS = require('aws-sdk');
 const secretsManager = new AWS.SecretsManager();
-const API_KEY = await secretsManager.getSecretValue({SecretId: 'mcp-api-key'});
+const mcpCredential = process.env.MCP_API_KEY;
 ```
 
 **Option 3: Docker Secrets**
@@ -234,7 +234,7 @@ services:
       MCP_API_KEY_FILE: /run/secrets/mcp_api_key
 
 secrets:
-  mcp_api_key:
+  mcp_api_key=replace_me_with_a_secret_from_your_secret_store
     file: ./secrets/mcp_api_key.txt
 ```
 
@@ -244,7 +244,7 @@ secrets:
 NEW_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 
 # 2. Update .env
-echo "MCP_API_KEY=$NEW_KEY" > .env
+echo "MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 
 # 3. Restart server
 pm2 restart revit-mcp-secure

@@ -1,0 +1,10 @@
+{
+  "name": "@datumm/revit-verify-only-canary",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "datumm-revit-canary-verify-only.mjs",
+    "artifact-manifest.json"
+  ]
+}

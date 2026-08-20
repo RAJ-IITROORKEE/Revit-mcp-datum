@@ -1,7 +1,7 @@
 {
   "schemaVersion": "execution-snapshot/v1",
   "snapshotId": "snapshot-01J0000000000000000000",
-  "snapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+  "snapshotHash": "103e9eb6317100c8fb4352d077a5ea93fd410479b17319fff237a381794040e6",
   "jobId": "job-01J000000000000000000000",
   "runtimeId": "runtime-01J00000000000000000000000",
   "connectionId": "connection-01J00000000000000000",
@@ -11,7 +11,7 @@
   "planRevision": 2,
   "planContentHash": "b14cb9610acb340cbea5816340bac00b9b37b33f92663e4d0c99c9539eaaec8d",
   "policyCatalogVersion": "revit-mcp-local-v2",
-  "policyCatalogHash": "1cccdf796f16c278a8b14cc94f5b24b3b4d26a00f4d45135cecf77a4e729f743",
+  "policyCatalogHash": "8fd7b6886896779e596d8e90fc844b9ac166c9d8a5e0b2d3ac1870523a4536a5",
   "units": "mm",
   "steps": [
     {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   createRelaySession,
   getRelayRouteKey,
+  isMcpRelayEndpointRole,
   RELAY_SESSION_PREFIX,
   verifyRelaySession,
 } from "./relay-session.js";
@@ -61,3 +62,8 @@ const tampered = `${token.slice(0, -1)}x`;
 assert.equal(verifyRelaySession(tampered, secret, now).valid, false);
 
 assert.throws(() => createRelaySession({ connectionId: "", endpointRole: "revit-plugin", issuedAt: now.toISOString(), expiresAt }, secret));
+
+assert.equal(isMcpRelayEndpointRole("mcp-server"), true);
+assert.equal(isMcpRelayEndpointRole("desktop-bridge"), true);
+assert.equal(isMcpRelayEndpointRole("revit-plugin"), false);
+assert.equal(isMcpRelayEndpointRole(undefined), false);

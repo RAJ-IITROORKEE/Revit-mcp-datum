@@ -26,17 +26,17 @@
       }
     ]
   },
-  "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+  "payloadHash": "731adce57d0761f083ecaca8eb223b60b785f1df4c756bc47587f2903a7bc1b5",
   "deadlineUnixMs": 1785071040000,
   "mutationClass": "mutation",
   "planId": "plan-3bhk-001",
   "planRevision": 2,
-  "planFingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+  "planFingerprint": "726a0230b5f1f702aa7633311dbf22932f9a74bf14b8b3bf817449793f33be99",
   "stepId": "step-wall",
   "idempotencyKey": "idem-01J000000000000000000000",
   "sessionTag": "session-01J0000000000000000000",
   "executionSnapshotId": "snapshot-01J0000000000000000000",
-  "executionSnapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+  "executionSnapshotHash": "103e9eb6317100c8fb4352d077a5ea93fd410479b17319fff237a381794040e6",
   "stepAuthorization": {
     "algorithm": "Ed25519",
     "issuer": "https://www.datumm.ai",
@@ -50,15 +50,15 @@
     "documentFingerprint": "doc-fingerprint-0000000000000001",
     "leaseEpoch": 7,
     "executionSnapshotId": "snapshot-01J0000000000000000000",
-    "executionSnapshotHash": "8ccf7fa4f16d6b0a12e5780ce2296000a0db0282d066ec4e5137d5931b976a72",
+    "executionSnapshotHash": "103e9eb6317100c8fb4352d077a5ea93fd410479b17319fff237a381794040e6",
     "planId": "plan-3bhk-001",
     "planRevision": 2,
-    "planFingerprint": "2b23d4ce2232f668fb22ce124c1dc8981911da2e9401e447b7d63bfe53477200",
+    "planFingerprint": "726a0230b5f1f702aa7633311dbf22932f9a74bf14b8b3bf817449793f33be99",
     "stepId": "step-wall",
     "tool": "create_wall",
-    "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+    "payloadHash": "731adce57d0761f083ecaca8eb223b60b785f1df4c756bc47587f2903a7bc1b5",
     "issuedAt": "2026-07-26T12:00:00.000Z",
     "expiresAt": "2026-07-26T12:10:00.000Z",
-    "signature": "Y1uab6BPuESYy27YGBiPsi_v9lifZENPmQhQD6_YxqeoNYrChYoh6LtnVopelFm1edjpCc2lJ-xNbS3b8x46CA"
+    "signature": "7ytQ8dR2jgF-aZjiSP-pRGHurGfUDvaUpeZq7nBrtPyfe3HpdkixuWhegbkm96ThNTTMFyhL1Pq3q8bTep41Ag"
   }
 }

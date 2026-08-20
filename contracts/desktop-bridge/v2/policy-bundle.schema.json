@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.datumm.com/desktop-bridge/v2/policy-bundle.json",
+  "title": "Datumm Signed Revit Policy Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocolVersion", "issuer", "algorithm", "kid", "policyReleaseId", "issuedAt", "notBefore", "expiresAt", "policyHash", "policy", "signature"],
+  "properties": {
+    "schema": { "const": "datumm.revit.policy-bundle/v1" },
+    "protocolVersion": { "const": 2 },
+    "issuer": { "const": "https://www.datumm.ai" },
+    "algorithm": { "const": "Ed25519" },
+    "kid": { "type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "policyReleaseId": { "type": "string", "minLength": 16, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "notBefore": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "policyHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance", "catalog", "profiles"],
+      "properties": {
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceRepository", "commit", "treeHash", "generator", "generatorVersion"],
+          "properties": {
+            "sourceRepository": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            "treeHash": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+            "generator": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "generatorVersion": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
+        },
+        "catalog": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceToolCount", "localToolCount", "excludedCloudTools", "manifest"],
+          "properties": {
+            "sourceToolCount": { "const": 155 },
+            "localToolCount": { "const": 152 },
+            "excludedCloudTools": { "const": ["query_stored_data", "store_project_data", "store_room_data"] },
+            "manifest": { "$ref": "https://contracts.datumm.com/desktop-bridge/v2/tool-policy-manifest.json" }
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "enabledTools", "llmVisibleTools", "deniedTools", "maxResultBytes", "tools"],
+            "properties": {
+              "id": { "const": "local-revit-readonly-v3" },
+              "enabledTools": { "const": ["get_levels_list"] },
+              "llmVisibleTools": { "const": ["get_levels_list"] },
+              "deniedTools": { "const": ["send_code_to_revit"] },
+              "maxResultBytes": { "const": 65536 },
+              "tools": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["get_levels_list"],
+                "properties": {
+                  "get_levels_list": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["mutationClass", "retryPolicy", "timeoutMs", "input", "maxLevels", "resultUnit"],
+                    "properties": {
+                      "mutationClass": { "const": "read" },
+                      "retryPolicy": { "const": "never" },
+                      "timeoutMs": { "const": 30000 },
+                      "input": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["includeNonStructural", "sortByElevation"],
+                        "properties": {
+                          "includeNonStructural": { "const": true },
+                          "sortByElevation": { "const": true }
+                        }
+                      },
+                      "maxLevels": { "const": 256 },
+                      "resultUnit": { "const": "mm" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": { "type": "string", "pattern": "^[A-Za-z0-9_-]{32,512}$" }
+  }
+}

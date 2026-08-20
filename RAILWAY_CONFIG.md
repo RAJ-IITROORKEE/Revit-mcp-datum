@@ -7,7 +7,7 @@
 Go to your Railway project → **Variables** tab → Add these:
 
 ```env
-MCP_API_KEY=c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 NODE_ENV=production
 MCP_HOST=0.0.0.0
 ENABLE_IP_WHITELIST=false
@@ -50,7 +50,7 @@ Railway's port is dynamic and changes per deployment - your app auto-detects it.
 
 ### Step 2: Test Your Server
 ```bash
-curl -k -H "Authorization: Bearer c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d" \
+curl -k -H "Authorization: Bearer YOUR_MCP_API_KEY" \
   https://your-domain.railway.app/status
 ```
 
@@ -76,7 +76,7 @@ Expected response:
       "transport": {
         "type": "http",
         "headers": {
-          "Authorization": "Bearer c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d"
+          "Authorization": "Bearer YOUR_MCP_API_KEY"
         }
       }
     }
@@ -116,6 +116,6 @@ Replace `your-domain.railway.app` with your actual Railway domain.
 ✅ **Domain:** Railway auto-generates (e.g., `your-app.railway.app`)
 ✅ **Port:** Railway auto-sets (app uses `process.env.PORT`)
 ✅ **HTTPS:** Railway provides SSL certificate automatically
-✅ **API Key:** Set in Variables tab: `MCP_API_KEY=your-key`
+✅ **API Key:** Set in Variables tab: `MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 
 **You're done! Just add environment variables and get your domain.**

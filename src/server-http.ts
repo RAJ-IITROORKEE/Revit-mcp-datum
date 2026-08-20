@@ -26,7 +26,10 @@ import { registerTools } from "./tools/register.js";
 // ─── Configuration ───────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.MCP_HOST || "0.0.0.0";
-const API_KEY = (process.env.MCP_API_KEY || "").trim();
+const mcpCredential = (process.env.MCP_API_KEY || "").trim();
+if (!mcpCredential) {
+  throw new Error("MCP_API_KEY is required; refusing to start.");
+}
 const SERVER_TIMEOUT_MS = 300000;
 const SERVER_KEEPALIVE_TIMEOUT_MS = 305000;
 const SERVER_HEADERS_TIMEOUT_MS = 310000;
@@ -152,17 +155,11 @@ app.options("/{*path}", (_req: Request, res: Response) => {
 
 // ─── Auth Middleware ─────────────────────────────────────────────────────────
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Skip auth if no API key configured (dev mode)
-  if (!API_KEY) {
-    next();
-    return;
-  }
-
   // Check Authorization: Bearer <token>
   const authHeader = req.headers.authorization || "";
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
-    if (token === API_KEY) {
+    if (token === mcpCredential) {
       next();
       return;
     }
@@ -170,7 +167,7 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
   // Check X-API-Key header
   const apiKeyHeader = req.headers["x-api-key"];
-  if (typeof apiKeyHeader === "string" && apiKeyHeader === API_KEY) {
+  if (typeof apiKeyHeader === "string" && apiKeyHeader === mcpCredential) {
     next();
     return;
   }
@@ -333,7 +330,7 @@ const httpServer = app.listen(PORT, HOST, () => {
   console.log(`  URL:    http://${HOST}:${PORT}`);
   console.log(`  MCP:    http://${HOST}:${PORT}/mcp`);
   console.log(`  Health: http://${HOST}:${PORT}/health`);
-  console.log(`  Auth:   ${API_KEY ? "ENABLED (API key required)" : "DISABLED (no API key set)"}`);
+  console.log(`  Auth:   ${mcpCredential ? "ENABLED (API key required)" : "DISABLED (no API key set)"}`);
   console.log("═══════════════════════════════════════════════════════════");
 });
 

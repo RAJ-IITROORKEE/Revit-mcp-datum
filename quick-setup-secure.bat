@@ -120,11 +120,11 @@ echo 2. Start the secure server:
 echo.
 echo    Option A - Direct execution:
 echo      $env:MCP_API_KEY = "!API_KEY!"
-echo      node server-secure.js
+echo      node server-secure.cjs
 echo.
 echo    Option B - Using PM2:
 echo      npm install -g pm2
-echo      pm2 start ecosystem-secure.config.js
+echo      pm2 start ecosystem-secure.config.cjs
 echo      pm2 logs revit-mcp-secure
 echo.
 echo 3. Update Claude Desktop config:

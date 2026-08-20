@@ -74,7 +74,7 @@ MCP_KEY_PATH=./certs/server.key
 NODE_ENV=production
 
 # Security Settings
-MCP_API_KEY=a7f3d2c1e8b9f4a5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=false
 ENABLE_RATE_LIMIT=true
 RATE_LIMIT_REQUESTS=100
@@ -85,10 +85,10 @@ RATE_LIMIT_WINDOW=60000
 
 ```bash
 # Start with secure version
-node server-secure.js
+node server-secure.cjs
 
 # Or with PM2
-pm2 start server-secure.js --name revit-mcp-secure
+pm2 start server-secure.cjs --name revit-mcp-secure
 ```
 
 ### Step 4: Update Claude Desktop Config
@@ -114,7 +114,7 @@ pm2 start server-secure.js --name revit-mcp-secure
 
 Set a strong API key (minimum 32 characters):
 ```bash
-export MCP_API_KEY="your-super-secret-key-minimum-32-chars"
+export MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ```
 
 ### IP Whitelist (For Known Servers Only)
@@ -209,10 +209,10 @@ echo "certs/" >> .gitignore
 ### 2. **Use Environment Variables**
 ```bash
 # ❌ BAD - Hardcoded
-const API_KEY = "secret123";
+const mcpCredential = process.env.MCP_API_KEY;
 
 # ✅ GOOD - Environment variable
-const API_KEY = process.env.MCP_API_KEY;
+const mcpCredential = process.env.MCP_API_KEY;
 ```
 
 ### 3. **Rotate API Keys Regularly**
@@ -302,7 +302,7 @@ sudo chown $USER:$USER certs/*
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    
    # Update environment
-   export MCP_API_KEY="new-key-here"
+   export MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
    ```
 
 2. **Stop server and restart**
@@ -339,7 +339,7 @@ sudo chown $USER:$USER certs/*
    npm run setup
    
    # New API key
-   export MCP_API_KEY="..."
+   export MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
    ```
 
 ---
@@ -374,7 +374,7 @@ pm2 monit
 ### For Solo Developer:
 ```env
 MCP_HOST=127.0.0.1
-MCP_API_KEY=your-strong-key
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=false
 ENABLE_RATE_LIMIT=true
 ```
@@ -382,7 +382,7 @@ ENABLE_RATE_LIMIT=true
 ### For Small Team (Same Office):
 ```env
 MCP_HOST=0.0.0.0
-MCP_API_KEY=your-strong-key
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=10.0.0.0/24
 ENABLE_RATE_LIMIT=true
@@ -391,7 +391,7 @@ ENABLE_RATE_LIMIT=true
 ### For Enterprise:
 ```env
 MCP_HOST=127.0.0.1            # With VPN only
-MCP_API_KEY=enterprise-rotation-monthly
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=corporate-vpn-gateway
 ENABLE_RATE_LIMIT=true
@@ -401,7 +401,7 @@ RATE_LIMIT_REQUESTS=500
 ### For Cloud Hosting:
 ```env
 MCP_HOST=127.0.0.1            # Behind load balancer
-MCP_API_KEY=use-secrets-manager
+MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
 ENABLE_IP_WHITELIST=true
 WHITELIST_IPS=load-balancer-ip
 ENABLE_RATE_LIMIT=true

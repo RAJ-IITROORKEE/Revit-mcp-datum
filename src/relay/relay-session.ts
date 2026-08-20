@@ -26,6 +26,12 @@ export type RelaySessionVerification =
   | { valid: true; session: VerifiedRelaySession }
   | { valid: false; error: string };
 
+export function isMcpRelayEndpointRole(
+  role: RelaySessionPayload["endpointRole"],
+): boolean {
+  return role === "mcp-server" || role === "desktop-bridge";
+}
+
 function base64UrlEncode(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
 }

@@ -36,6 +36,9 @@ const schemaFiles = [
   "todo-update.schema.json",
   "tool-policy-manifest.schema.json",
   "signed-tool-policy-manifest.schema.json",
+  "policy-bundle.schema.json",
+  "policy-provenance-attestation.schema.json",
+  "trust-root.schema.json",
   "plan-artifact.schema.json",
   "execution-snapshot.schema.json",
   "pipe-handshake.schema.json",
@@ -60,6 +63,7 @@ const fixtureSchema = new Map([
   ["authenticated-frame.json", "authenticated-frame.schema.json"],
   ["tool-policy-manifest.json", "tool-policy-manifest.schema.json"],
   ["signed-tool-policy-manifest.json", "signed-tool-policy-manifest.schema.json"],
+  ["trust-root.v1.json", "trust-root.schema.json"],
 ]);
 
 async function loadJson(path) {
@@ -137,7 +141,7 @@ for (const file of schemaFiles) {
 
 const fixtures = new Map();
 for (const [file, schemaFile] of fixtureSchema) {
-  const fixturePath = file === "tool-policy-manifest.json" ? join(root, file) : join(root, "fixtures", file);
+  const fixturePath = file === "tool-policy-manifest.json" || file === "trust-root.v1.json" ? join(root, file) : join(root, "fixtures", file);
   const fixture = await loadJson(fixturePath);
   const validate = ajv.getSchema(schemas.get(schemaFile).$id);
   assert(validate(fixture), `${file}: schema validation failed: ${ajv.errorsText(validate.errors)}`);

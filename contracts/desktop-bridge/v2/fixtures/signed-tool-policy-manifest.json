@@ -5,12 +5,15 @@
   "manifest": {
     "protocolVersion": 2,
     "catalogVersion": "revit-mcp-local-v2",
-    "catalogHash": "1cccdf796f16c278a8b14cc94f5b24b3b4d26a00f4d45135cecf77a4e729f743",
+    "catalogHash": "8fd7b6886896779e596d8e90fc844b9ac166c9d8a5e0b2d3ac1870523a4536a5",
     "localToolCount": 152,
     "excludedCloudTools": [
       "query_stored_data",
       "store_project_data",
       "store_room_data"
+    ],
+    "prohibitedLlmTools": [
+      "send_code_to_revit"
     ],
     "tools": [
       {
@@ -349,7 +352,7 @@
         "retryPolicy": "never",
         "timeoutMs": 180000,
         "createdIdsRequired": true,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -514,7 +517,7 @@
         "retryPolicy": "never",
         "timeoutMs": 180000,
         "createdIdsRequired": true,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -789,7 +792,7 @@
         "retryPolicy": "never",
         "timeoutMs": 180000,
         "createdIdsRequired": true,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -954,7 +957,7 @@
         "retryPolicy": "never",
         "timeoutMs": 180000,
         "createdIdsRequired": true,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -998,7 +1001,7 @@
         "retryPolicy": "never",
         "timeoutMs": 180000,
         "createdIdsRequired": false,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -1449,7 +1452,7 @@
         "retryPolicy": "never",
         "timeoutMs": 300000,
         "createdIdsRequired": true,
-        "sessionTagSupported": false,
+        "sessionTagSupported": true,
         "automaticRollbackAllowed": false,
         "maxArgsBytes": 1048576,
         "maxResultBytes": 4194304
@@ -1687,5 +1690,5 @@
       }
     ]
   },
-  "signature": "4Qh82xmzQ22ha8rcK2amsB5XYtX8wmZZDoFLSjz4_KS_A8wrODQr5b1my5OTpKZBgYx1YlseSgWrzT1V3HxUAA"
+  "signature": "OneH783IN_5m01XKazIIbyfw3zxQQ4bezNJ_xitWUpTmPrB2zZ05BViBcQCdCsZTYhQg6TZBa23WY6-P2-uyAg"
 }

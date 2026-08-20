@@ -10,7 +10,7 @@
   "leaseEpoch": 7,
   "stateVersion": 8,
   "documentFingerprint": "doc-fingerprint-0000000000000001",
-  "payloadHash": "da8b9df961c02fbc92d477feecb34c89e32df2fbc2efe7a07c17bec80ff0da02",
+  "payloadHash": "731adce57d0761f083ecaca8eb223b60b785f1df4c756bc47587f2903a7bc1b5",
   "mutationClass": "mutation",
   "journalState": "DISPATCHED",
   "outcome": "OUTCOME_UNKNOWN",

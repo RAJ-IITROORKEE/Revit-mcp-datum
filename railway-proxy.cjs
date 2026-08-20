@@ -8,7 +8,12 @@ const https = require('https');
 const readline = require('readline');
 
 const RAILWAY_URL = 'revit-mcp-datum-production.up.railway.app';
-const API_KEY = 'c8e331f621c4e46b0be5c9d815a171a261ad2dacff7324cf737bb42442b0094d';
+const mcpCredential = (process.env.MCP_API_KEY || '').trim();
+
+if (!mcpCredential) {
+  console.error('[Proxy] MCP_API_KEY is required; refusing to start.');
+  process.exit(1);
+}
 
 let sessionId = null;
 
@@ -42,7 +47,7 @@ function forwardToRailway(request) {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/event-stream',
-      'Authorization': `Bearer ${API_KEY}`,
+      'Authorization': `Bearer ${mcpCredential}`,
       'Content-Length': Buffer.byteLength(body)
     }
   };

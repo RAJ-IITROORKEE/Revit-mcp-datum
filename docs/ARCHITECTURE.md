@@ -25,7 +25,7 @@
 │               │                                                │
 │               ▼                                                │
 │  ┌──────────────────────────────────┐                          │
-│  │  server-secure.js (Port 3000)    │                          │
+│  │  server-secure.cjs (Port 3000)   │                          │
 │  │  ┌────────────────────────────┐  │                          │
 │  │  │ 1. Verify API Key          │  │  ✅ PASS                 │
 │  │  │ (Bearer/X-API-Key header)  │  │                          │
@@ -52,7 +52,7 @@
 Configuration:
   MCP_HOST=127.0.0.1           (localhost only)
   MCP_PORT=3000
-  MCP_API_KEY=<random-32-chars>
+  MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_IP_WHITELIST=false
   ENABLE_RATE_LIMIT=true
 
@@ -122,7 +122,7 @@ Configuration:
   MCP_HOST=0.0.0.0               (all interfaces)
   ENABLE_IP_WHITELIST=true
   WHITELIST_IPS=192.168.1.0/24
-  MCP_API_KEY=<rotated-monthly>
+  MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_RATE_LIMIT=true
 
 ✅ Perfect for: Small teams, office networks
@@ -193,7 +193,7 @@ Configuration:
   MCP_HOST=127.0.0.1             (VPN/bastion only)
   ENABLE_IP_WHITELIST=true
   WHITELIST_IPS=203.0.113.50     (VPN gateway)
-  MCP_API_KEY=<enterprise-rotation>
+  MCP_API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_RATE_LIMIT=true
 
 ✅ Perfect for: Enterprise, distributed teams
@@ -330,21 +330,21 @@ LOCAL DEVELOPMENT SETTINGS:
 
 LEVEL 1 SETTINGS (Localhost):
   MCP_HOST=127.0.0.1
-  API_KEY=<generated>
+  API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_IP_WHITELIST=false
   ENABLE_RATE_LIMIT=true
   Minimal configuration needed
 
 LEVEL 2 SETTINGS (Office Network):
   MCP_HOST=0.0.0.0
-  API_KEY=<strong-rotated>
+  API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_IP_WHITELIST=true
   WHITELIST_IPS=<office-subnet>
   Use Let's Encrypt certificates
 
 LEVEL 3 SETTINGS (Enterprise):
   MCP_HOST=127.0.0.1
-  API_KEY=<from-secrets-manager>
+  API_KEY=replace_me_with_a_secret_from_your_secret_store
   ENABLE_IP_WHITELIST=true
   WHITELIST_IPS=<vpn-gateway>
   Use Let's Encrypt certificates
