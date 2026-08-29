@@ -1,11 +1,11 @@
 /**
- * Combined Server - MCP HTTP + Relay WebSocket (Single Port for Railway)
+ * Combined Server - MCP HTTP + Relay WebSocket
  * 
  * This server runs both on the SAME port:
  * - MCP HTTP endpoints (for LLM clients) 
  * - Relay WebSocket (for Revit plugins) at /relay path
  * 
- * This is required for Railway which only exposes a single port.
+ * This single-port layout works behind Cloud Run and Railway HTTPS termination.
  */
 
 import express, { Request, Response, NextFunction } from "express";
@@ -40,10 +40,15 @@ if (!mcpCredential) {
 }
 const NODE_ENV = process.env.NODE_ENV || "development";
 
-// Railway server timeouts (5 minutes + grace periods)
-const SERVER_TIMEOUT_MS = 300000; // 5 minutes
-const SERVER_KEEPALIVE_TIMEOUT_MS = 305000; // 5m5s
-const SERVER_HEADERS_TIMEOUT_MS = 310000; // 5m10s
+function getPositiveIntegerEnv(name: string, fallback: number): number {
+  const value = Number.parseInt(process.env[name] || "", 10);
+  return Number.isSafeInteger(value) && value > 0 ? value : fallback;
+}
+
+// Tool calls may legitimately take ten minutes in a live Revit session.
+const SERVER_TIMEOUT_MS = getPositiveIntegerEnv("SERVER_TIMEOUT_MS", 660000);
+const SERVER_KEEPALIVE_TIMEOUT_MS = getPositiveIntegerEnv("SERVER_KEEPALIVE_TIMEOUT_MS", 665000);
+const SERVER_HEADERS_TIMEOUT_MS = getPositiveIntegerEnv("SERVER_HEADERS_TIMEOUT_MS", 670000);
 
 // ─── MCP Session Store ───────────────────────────────────────────────────────
 
@@ -393,7 +398,7 @@ app.get("/api/relay/token/:token", authMiddleware, async (req: Request, res: Res
   });
 });
 
-// Validate and re-register an existing token (used by Revit plugin after Railway restart).
+// Validate and re-register an existing token after a service restart.
 // If the server restarted and lost in-memory state, this re-creates the token entry so
 // both Revit and Datum can resume using the same token without user intervention.
 app.post("/api/relay/validate-and-register", authMiddleware, async (req: Request, res: Response) => {
@@ -547,7 +552,7 @@ app.post("/mcp", authMiddleware, async (req: Request, res: Response) => {
          return;
       }
 
-      // No matching session — Railway may have restarted. Return a clean JSON-RPC error
+      // No matching session; the service may have restarted. Return a clean JSON-RPC error
       // so the client can detect and re-initialize the session (new initialize call).
       const method = typeof req.body?.method === "string" ? req.body.method : "unknown";
       const reqId = req.body?.id ?? null;
@@ -627,7 +632,7 @@ async function start() {
   // Create HTTP server from Express app
   const httpServer = createServer(app);
 
-  // ─── Railway Production Timeouts ──────────────────────────────────────────
+  // ─── Production Timeouts ──────────────────────────────────────────────────
   // These settings prevent "Cannot set headers after they are sent" and socket hang-ups
   httpServer.timeout = SERVER_TIMEOUT_MS;
   httpServer.keepAliveTimeout = SERVER_KEEPALIVE_TIMEOUT_MS;
@@ -639,7 +644,7 @@ async function start() {
   // Start listening
   httpServer.listen(PORT, HOST, () => {
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("  Revit MCP Combined Server (Single Port - Railway Ready)");
+    console.log("  Revit MCP Combined Server (Cloud Ready)");
     console.log("═══════════════════════════════════════════════════════════");
     console.log(`  HTTP:        http://${HOST}:${PORT}`);
     console.log(`  MCP:         http://${HOST}:${PORT}/mcp`);

@@ -36,7 +36,7 @@ function resolvePrettyTransport():
 
 /**
  * Production-grade logger using pino for structured JSON logging.
- * Optimized for Railway deployment with stdout transport.
+ * Optimized for managed container deployment with stdout transport.
  */
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
